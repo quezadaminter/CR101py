@@ -131,9 +131,9 @@ class MediaListItemsPage(PageBase):
 #         number = '({{: >{}}}) '.format(index_length).format(index + 1)
 #         yield number + print_patterns[data_type].format(**item_dict)
 
-   def __init__(self):
+   def __init__(self, topLevel):
       # These member variables must be called before the super() constructor
       # because they will be used by the child via abstract methods.
       self.libStore = None
       self.select = None
-      super().__init__()
+      super().__init__(topLevel)

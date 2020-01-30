@@ -152,5 +152,5 @@ class MusicLibraryPage(PageBase):
 
       return grid
 
-   def __init__(self):
-      super().__init__()
+   def __init__(self, topLevel):
+      super().__init__(topLevel)

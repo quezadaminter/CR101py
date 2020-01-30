@@ -95,6 +95,12 @@ class Zone():
         """Get the current state of a device / group"""
         return self.sonos.get_current_transport_info()['current_transport_state']
 
+   def play_mode(self, playMode):
+      self.sonos.play_mode(playMode)
+
+   def cross_fade(self, enabled):
+      self.sonos.cross_fade(enabled)
+
    def get_current_transport_info(self):
       return self.sonos.get_current_transport_info()
 

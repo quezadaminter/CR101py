@@ -109,5 +109,5 @@ class MusicPage(PageBase):
       grid.attach(l, 2, 0, 1, 1)
       return grid
 
-   def __init__(self):
-      super().__init__()
+   def __init__(self, topLevel):
+      super().__init__(topLevel)

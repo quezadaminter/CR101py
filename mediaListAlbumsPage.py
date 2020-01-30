@@ -190,5 +190,5 @@ class MediaListAlbumsPage(MediaListItemsPage):
 ##         number = '({{: >{}}}) '.format(index_length).format(index + 1)
 ##         yield number + print_patterns[data_type].format(**item_dict)
 
-   def __init__(self):
-      super().__init__()
+   def __init__(self, topLevel):
+      super().__init__(topLevel)

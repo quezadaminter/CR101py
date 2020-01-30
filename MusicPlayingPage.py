@@ -6,6 +6,7 @@ from gi.repository import Gio
 from PageBase import PageBase
 from threading import Lock
 from enum import Enum
+from zoneListener import ZoneListener
 import requests
 
 mutex = Lock()
@@ -62,10 +63,10 @@ class PlayModeDialog(Gtk.Dialog):
       self.listView.append_column(col)
       
       xfade = "Turn Crossfade " + ("On" if parent.crossFadeMode == '0' else "Off")
-      self.listStore.append(["Normal", self.Choice.NORMAL])
-      self.listStore.append(["Shuffle", self.Choice.SHUFFLE])
-      self.listStore.append(["Repeat", self.Choice.REPEAT])
-      self.listStore.append(["Shuffle-Repeat", self.Choice.SHUFFLE_REPEAT])
+      self.listStore.append(["Normal", self.Choice.PLAY_NORMAL])
+      self.listStore.append(["Shuffle", self.Choice.PLAY_SHUFFLE])
+      self.listStore.append(["Repeat", self.Choice.PLAY_REPEAT])
+      self.listStore.append(["Shuffle-Repeat", self.Choice.PLAY_SHUFFLE_REPEAT])
       self.listStore.append([xfade, self.Choice.CROSSFADE])
 
       self.select = self.listView.get_selection()
@@ -81,6 +82,28 @@ class PlayModeDialog(Gtk.Dialog):
 
 class MusicPlayingPage(PageBase):
 
+   class zoneListener(ZoneListener):
+      def __init__(self, owner):
+         super().__init__(owner)
+
+      def on_selected_zone_changed(self):
+         self.owner.on_Page_Entered_View(None)
+
+      def on_zone_transport_change_event(self, event):
+         self.owner.on_zone_transport_change_event(event)
+
+      def on_zone_render_change_event(self, event):
+         pass
+
+      def on_zone_queue_update_begin(self):
+         pass
+
+      def on_zone_queue_update_end(self):
+         pass
+   
+      def on_current_track_update_state(self, trackInfo):
+         self.owner.on_current_track_update_state(trackInfo)
+
    def close_play_mode_dialog(self):
       self.playModeDialog.destroy()
       self.playModeDialog = None
@@ -88,16 +111,18 @@ class MusicPlayingPage(PageBase):
    def handlePlayModeResponse(self):
       response = self.playModeDialog.get_response()
       self.close_play_mode_dialog()
-      if response == PlayModeDialog.Choice.PLAY_NORMAL:
-         pass
-      elif response == PlayModeDialog.Choice.PLAY_SHUFFLE:
-         pass
-      elif response == PlayModeDialog.Choice.PLAY_REPEAT:
-         pass
-      elif response == PlayModeDialog.Choice.PLAY_SHUFFLE_REPEAT:
-         pass
-      elif response == PlayModeDialog.Choice.CROSSFADE:
-         pass
+      zone = self.topLevel.get_selected_zone()
+      if zone is not None:
+         if response == PlayModeDialog.Choice.PLAY_NORMAL:
+            zone.play_mode('NORMAL')
+         elif response == PlayModeDialog.Choice.PLAY_SHUFFLE:
+            zone.play_mode('SHUFFLE')
+         elif response == PlayModeDialog.Choice.PLAY_REPEAT:
+            zone.play_mode('REPEAT_ALL')
+         elif response == PlayModeDialog.Choice.PLAY_SHUFFLE_REPEAT:
+            zone.play_mode('SHUFFLE_NOREPEAT')
+         elif response == PlayModeDialog.Choice.CROSSFADE:
+            zone.cross_fade(True if self.crossFadeMode == '0' else False)
 
    def on_zoneButton_Clicked(self):
       # Close all open dialogs.
@@ -150,97 +175,104 @@ class MusicPlayingPage(PageBase):
       else:
          self.handlePlayModeResponse()
 
-   def set_text_size(self, textSize):
-      #PangoAttrList *attrlist = pango_attr_list_new();
-      #PangoAttribute *attr = pango_attr_size_new_absolute(20);
-      #pango_attr_list_insert(attrlist, attr);
-      #gtk_label_set_attributes(GTK_LABEL(label), attrlist);
-      #attrList = pango.AttrList()
-      #attr = pango.AttrSize(textSize * 1000, 0, -1)
-      #attrList.insert(attr)
-      #return attrList
-      pass
-
    def on_zone_transport_change_event(self, event):
       mutex.acquire()
 
       try:
-         currentPlayMode = event.variables['current_play_mode']
-         if currentPlayMode == 'SHUFFLE_NOREPEAT':
-            self.playModeRepeatImage.clear()
-            self.playModeShuffleImage.set_from_icon_name(Gtk.STOCK_FIND, Gtk.IconSize.SMALL_TOOLBAR)
-         elif currentPlayMode == 'REPEAT_ALL':
-            self.playModeRepeatImage.set_from_icon_name(Gtk.STOCK_REFRESH, Gtk.IconSize.SMALL_TOOLBAR)
-            self.playModeShuffleImage.clear()
-         elif currentPlayMode == 'NORMAL':
-            self.playModeRepeatImage.clear()
-            self.playModeShuffleImage.clear()
-         elif currentPlayMode == 'SHUFFLE': # shuffle and repeat
-            self.playModeRepeatImage.set_from_icon_name(Gtk.STOCK_REFRESH, Gtk.IconSize.SMALL_TOOLBAR)
-            self.playModeShuffleImage.set_from_icon_name(Gtk.STOCK_FIND, Gtk.IconSize.SMALL_TOOLBAR)
-
-         xportState = event.variables['transport_state']
-         if xportState == 'PAUSED_PLAYBACK':
-            self.xportStateImage.set_from_icon_name(Gtk.STOCK_MEDIA_PAUSE, Gtk.IconSize.SMALL_TOOLBAR)
-         elif xportState == 'TRANSITIONING':
-            self.xportStateImage.set_from_icon_name(Gtk.STOCK_INFO, Gtk.IconSize.SMALL_TOOLBAR)
-         elif xportState == 'PLAYING':
-            self.xportStateImage.set_from_icon_name(Gtk.STOCK_MEDIA_PLAY, Gtk.IconSize.SMALL_TOOLBAR)
-         elif xportState == 'STOPPED':
-            self.xportStateImage.set_from_icon_name(Gtk.STOCK_MEDIA_STOP, Gtk.IconSize.SMALL_TOOLBAR)
-            self.trackProgressBar.set_fraction(0.0)
-            self.trackProgressTimeLabel.set_text("--:--/--:--")
+         if hasattr(event, 'variables'):
+            varDict = event.variables
          else:
-            self.xportStateImage.set_from_icon_name(Gtk.STOCK_DIALOG_QUESTION, Gtk.IconSize.SMALL_TOOLBAR)
+            varDict = event
 
-         self.crossFadeMode = event.variables['current_crossfade_mode']
-         if self.crossFadeMode == '1':
-            self.crossFadeImage.set_from_icon_name(Gtk.STOCK_NETWORK, Gtk.IconSize.SMALL_TOOLBAR)
+         if 'current_play_mode' in varDict:
+            currentPlayMode = varDict['current_play_mode']
+            if currentPlayMode == 'SHUFFLE_NOREPEAT':
+               self.playModeRepeatImage.clear()
+               self.playModeShuffleImage.set_from_icon_name(Gtk.STOCK_FIND, Gtk.IconSize.SMALL_TOOLBAR)
+            elif currentPlayMode == 'REPEAT_ALL':
+               self.playModeRepeatImage.set_from_icon_name(Gtk.STOCK_REFRESH, Gtk.IconSize.SMALL_TOOLBAR)
+               self.playModeShuffleImage.clear()
+            elif currentPlayMode == 'NORMAL':
+               self.playModeRepeatImage.clear()
+               self.playModeShuffleImage.clear()
+            elif currentPlayMode == 'SHUFFLE': # shuffle and repeat
+               self.playModeRepeatImage.set_from_icon_name(Gtk.STOCK_REFRESH, Gtk.IconSize.SMALL_TOOLBAR)
+               self.playModeShuffleImage.set_from_icon_name(Gtk.STOCK_FIND, Gtk.IconSize.SMALL_TOOLBAR)
+
+         if 'transport_state' in varDict:
+            xportState = varDict['transport_state']
+            if xportState == 'PAUSED_PLAYBACK':
+               self.xportStateImage.set_from_icon_name(Gtk.STOCK_MEDIA_PAUSE, Gtk.IconSize.SMALL_TOOLBAR)
+            elif xportState == 'TRANSITIONING':
+               self.xportStateImage.set_from_icon_name(Gtk.STOCK_INFO, Gtk.IconSize.SMALL_TOOLBAR)
+            elif xportState == 'PLAYING':
+               self.xportStateImage.set_from_icon_name(Gtk.STOCK_MEDIA_PLAY, Gtk.IconSize.SMALL_TOOLBAR)
+            elif xportState == 'STOPPED':
+               self.xportStateImage.set_from_icon_name(Gtk.STOCK_MEDIA_STOP, Gtk.IconSize.SMALL_TOOLBAR)
+               self.trackProgressBar.set_fraction(0.0)
+               self.trackProgressTimeLabel.set_text("--:--/--:--")
+            else:
+               self.xportStateImage.set_from_icon_name(Gtk.STOCK_DIALOG_QUESTION, Gtk.IconSize.SMALL_TOOLBAR)
+
+         if 'current_crossfade_mode' in varDict:
+            self.crossFadeMode = varDict['current_crossfade_mode']
+            if self.crossFadeMode == '1':
+               self.crossFadeImage.set_from_icon_name(Gtk.STOCK_NETWORK, Gtk.IconSize.SMALL_TOOLBAR)
+            else:
+               self.crossFadeImage.clear()
+
+         if 'next_track_meta_data' in varDict:
+            nextTrackMetaData = varDict['next_track_meta_data']
+            if nextTrackMetaData is not '':
+               nextTrackMetaData = nextTrackMetaData.to_dict()
+               nextTrackTitle = nextTrackMetaData['title']
+               nextTrackArtist = nextTrackMetaData['creator']
+               string = "<b>{0} - {1}</b>"
+               self.nextTrackLabel.set_text("Next: ")
+               self.nextTrackNameLabel.set_markup(string.format(nextTrackTitle, nextTrackArtist))
+            else:
+               self.nextTrackLabel.set_text("")
+               self.nextTrackNameLabel.set_text("")
+
+         if 'current_track' in varDict and 'number_of_tracks' in varDict:
+            currentTrack = varDict['current_track']
+            numberOfTracks = varDict['number_of_tracks']
+            string = "Track [{0}/{1}]"
+            self.trackNumberLabel.set_text(string.format(currentTrack, numberOfTracks))
+
+            self.inQueueLabel.set_text("In Queue: ")
+            string = "<b>{0}</b>"
+            self.inQueueCountLabel.set_markup(string.format(numberOfTracks))
          else:
-            self.crossFadeImage.clear()
+            self.trackNumberLabel.set_text("Track")
+            self.inQueueLabel.set_text("")
+            self.inQueueCountLabel.set_text("")
 
-         nextTrackMetaData = event.variables['next_track_meta_data']
-         if nextTrackMetaData is not '':
-            nextTrackMetaData = nextTrackMetaData.to_dict()
-            nextTrackTitle = nextTrackMetaData['title']
-            nextTrackArtist = nextTrackMetaData['creator']
-            string = "<b>{0} - {1}</b>"
-            self.nextTrackNameLabel.set_markup(string.format(nextTrackTitle, nextTrackArtist))
-         else:
-            self.nextTrackNameLabel.set_text("")
+         if 'current_track_meta_data' in varDict:
+            currentTrackMetaData = varDict['current_track_meta_data']
+            if currentTrackMetaData is not '':
+               currentTrackMetaData = currentTrackMetaData.to_dict()
+               self.trackNameLabel.set_markup("<b>" + currentTrackMetaData['title'] + "</b>")
+               self.artistsNameLabel.set_markup("<b>" + currentTrackMetaData['creator'] + "</b>")
+               self.albumNameLabel.set_markup("<b>" + currentTrackMetaData['album'] + "</b>")
+               self.trackProgressBar.show()
+               self.trackProgressTimeLabel.show()
 
-         currentTrack = event.variables['current_track']
-         numberOfTracks = event.variables['number_of_tracks']
-         string = "Track [{0}/{1}]"
-         self.trackNumberLabel.set_text(string.format(currentTrack, numberOfTracks))
-
-         string = "<b>{0}</b>"
-         self.inQueueCountLabel.set_markup(string.format(numberOfTracks))
-
-         currentTrackMetaData = event.variables['current_track_meta_data']
-         if currentTrackMetaData is not '':
-            currentTrackMetaData = currentTrackMetaData.to_dict()
-            self.trackNameLabel.set_markup("<b>" + currentTrackMetaData['title'] + "</b>")
-            self.artistsNameLabel.set_markup("<b>" + currentTrackMetaData['creator'] + "</b>")
-            self.albumNameLabel.set_markup("<b>" + currentTrackMetaData['album'] + "</b>")
-            self.trackProgressBar.show()
-            self.trackProgressTimeLabel.show()
-
-            if self.topLevel.get_selected_zone() is not None:
-               self.albumArtUri = self.topLevel.get_selected_zone().sonos.music_library.build_album_art_full_uri(currentTrackMetaData['album_art_uri'])
-               response = requests.get(self.albumArtUri)
-               if response.status_code == 200:
-                  input_stream = Gio.MemoryInputStream.new_from_data(response.content, None) 
-                  pixbuf = GdkPixbuf.Pixbuf()
-                  pixbuf = pixbuf.new_from_stream(input_stream, None).scale_simple(128, 128, GdkPixbuf.InterpType.BILINEAR)
-                  self.albumArtImage.set_from_pixbuf(pixbuf)
-         else:
-            self.trackNameLabel.set_markup("<b>[no music]</b>")
-            self.artistsNameLabel.set_text("")
-            self.albumNameLabel.set_text("")
-            self.albumArtImage.set_from_icon_name(Gtk.STOCK_CDROM, Gtk.IconSize.DIALOG)
-            self.trackProgressBar.hide()
-            self.trackProgressTimeLabel.hide()
+               if self.topLevel.get_selected_zone() is not None:
+                  self.albumArtUri = self.topLevel.get_selected_zone().sonos.music_library.build_album_art_full_uri(currentTrackMetaData['album_art_uri'])
+                  response = requests.get(self.albumArtUri)
+                  if response.status_code == 200:
+                     input_stream = Gio.MemoryInputStream.new_from_data(response.content, None) 
+                     pixbuf = GdkPixbuf.Pixbuf()
+                     pixbuf = pixbuf.new_from_stream(input_stream, None).scale_simple(128, 128, GdkPixbuf.InterpType.BILINEAR)
+                     self.albumArtImage.set_from_pixbuf(pixbuf)
+            else:
+               self.trackNameLabel.set_markup("<b>[no music]</b>")
+               self.artistsNameLabel.set_text("")
+               self.albumNameLabel.set_text("")
+               self.albumArtImage.set_from_icon_name(Gtk.STOCK_CDROM, Gtk.IconSize.DIALOG)
+               self.trackProgressBar.hide()
+               self.trackProgressTimeLabel.hide()
       finally:
          mutex.release()
 
@@ -249,32 +281,31 @@ class MusicPlayingPage(PageBase):
       try:
          # grab the values from the current track
          # state and update the gui
-         trackPos = trackInfo['position'].split(':')
-         trackLen = trackInfo['duration'].split(':')
-         tpH = int(trackPos[0])
-         tpM = int(trackPos[1])
-         tpS = int(trackPos[2])
+         if isinstance(trackInfo, dict):
+            trackPos = trackInfo['position'].split(':')
+            trackLen = trackInfo['duration'].split(':')
+            tpH = int(trackPos[0])
+            tpM = int(trackPos[1])
+            tpS = int(trackPos[2])
 
-         tlH = int(trackLen[0])
-         tlM = int(trackLen[1])
-         tlS = int(trackLen[2])
+            tlH = int(trackLen[0])
+            tlM = int(trackLen[1])
+            tlS = int(trackLen[2])
 
-         trackProg = float((tpH * 24) + (tpM * 60) + tpS)
-         trackDur  = float((tlH * 24) + (tlM * 60) + tlS)
+            trackProg = float((tpH * 24) + (tpM * 60) + tpS)
+            trackDur  = float((tlH * 24) + (tlM * 60) + tlS)
 
-         tpos = ((trackPos[0] + ":") if tpH > 0 else "") + trackPos[1] + ":" + trackPos[2]
-         tdur = ((trackLen[0] + ":") if tlH > 0 else "") + trackLen[1] + ":" + trackLen[2]
+            tpos = ((trackPos[0] + ":") if tpH > 0 else "") + trackPos[1] + ":" + trackPos[2]
+            tdur = ((trackLen[0] + ":") if tlH > 0 else "") + trackLen[1] + ":" + trackLen[2]
       
-         self.trackProgressBar.set_fraction(trackProg / trackDur)
-         self.trackProgressTimeLabel.set_text(tpos + "/" + tdur)
+            self.trackProgressBar.set_fraction(trackProg / trackDur)
+            self.trackProgressTimeLabel.set_text(tpos + "/" + tdur)
       finally:
          mutex.release()
 
 
    def title(self):
       self.titleLabel = Gtk.Label("Now Playing")
-      #self.titleLabel.set_markup("<span size=20000>Now Playing</span>")
-      #self.titleLabel.set_attributes(self.set_text_size(20))
       return(self.titleLabel)
 
    def scrolledWindow(self):
@@ -312,7 +343,6 @@ class MusicPlayingPage(PageBase):
       detailVBox.pack_start(self.trackNumberLabel, True, False, 0)
 
       self.trackNameLabel = Gtk.Label()
-      #self.trackNameLabel.set_markup("<b>Track Name Goes Here In Bold</b>")
       self.trackNameLabel.set_markup("<span weight=\"bold\">Track Name Goes Here In Bold</span>")
       self.trackNameLabel.set_ellipsize(Pango.EllipsizeMode.END)
       self.trackNameLabel.set_alignment(0.0, 0.5)
@@ -336,7 +366,7 @@ class MusicPlayingPage(PageBase):
       detailVBox.pack_start(self.artistsNameLabel, True, False, 0)
 
       separatorLine = Gtk.Image()
-      separatorLine.set_from_file("./separator.png")
+      separatorLine.set_from_file("./images/separator.png")
       detailVBox.pack_start(separatorLine, True, False, 0)
 
       albumsLabel = Gtk.Label("Albums")
@@ -358,8 +388,8 @@ class MusicPlayingPage(PageBase):
    def status(self):
       bottomHBox = Gtk.HBox()
 
-      nextTrackLabel = Gtk.Label("Next: ")
-      bottomHBox.pack_start(nextTrackLabel, False, False, 0)
+      self.nextTrackLabel = Gtk.Label("Next: ")
+      bottomHBox.pack_start(self.nextTrackLabel, False, False, 0)
 
       self.nextTrackNameLabel = Gtk.Label()
       self.nextTrackNameLabel.set_markup("<b>Track Name - Artist Name</b>")
@@ -370,8 +400,8 @@ class MusicPlayingPage(PageBase):
       queueImage.set_from_icon_name(Gtk.STOCK_JUSTIFY_FILL, Gtk.IconSize.SMALL_TOOLBAR)
       bottomHBox.pack_start(queueImage, False, False, 2)
 
-      inQueueLabel = Gtk.Label("In Queue: ")
-      bottomHBox.pack_start(inQueueLabel, False, False, 0)
+      self.inQueueLabel = Gtk.Label("In Queue: ")
+      bottomHBox.pack_start(self.inQueueLabel, False, False, 0)
 
       self.inQueueCountLabel = Gtk.Label()
       self.inQueueCountLabel.set_markup("<b>##</b>")
@@ -393,7 +423,9 @@ class MusicPlayingPage(PageBase):
       grid.attach(l, 2, 0, 1, 1)
       return grid
 
-   def __init__(self):
-      super().__init__()
+   def __init__(self, topLevel):
+      super().__init__(topLevel)
       self.crossFadeMode = '0'
       self.playModeDialog = None
+      self.zlistener = self.zoneListener(self)
+      self.topLevel.add_zone_listener(self.__class__.__name__, self.zlistener)

@@ -1,24 +1,84 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf
+from gi.repository import Gio
+from gi.repository import Pango
 from PageBase import PageBase
+from threading import Lock
+from zoneListener import ZoneListener
+import requests
+
+mutex = Lock()
 
 class MusicAlbumArtPage(PageBase):
 
-   def on_zoneButton_Clicked(self, button):
-       print("Zone Button clicked")
+   class zoneListener(ZoneListener):
+      def __init__(self, owner):
+         super().__init__(owner)
+
+      def on_selected_zone_changed(self):
+         self.owner.on_Page_Entered_View(None)
+
+      def on_zone_transport_change_event(self, event):
+         self.owner.on_zone_transport_change_event(event)
+
+      def on_zone_render_change_event(self, event):
+         pass
+
+      def on_zone_queue_update_begin(self):
+         pass
+
+      def on_zone_queue_update_end(self):
+         pass
+      
+      def on_current_track_update_state(self, trackInfo):
+         pass
 
    def on_Page_Entered_View(self, SelectedZone):
+      zone = self.topLevel.get_selected_zone()
+      if zone is not None:
+         self.on_zone_transport_change_event(zone.get_current_transport_info())
+#         self.on_current_track_update_state(zone.get_current_track_info())
       print("Album art in view")
+
+   def on_zone_transport_change_event(self, event):
+      mutex.acquire()
+
+      try:
+         if hasattr(event, 'variables'):
+            varDict = event.variables
+         else:
+            varDict = event
+
+         if 'current_track_meta_data' in varDict:
+            currentTrackMetaData = varDict['current_track_meta_data']
+            if currentTrackMetaData is not '':
+               currentTrackMetaData = currentTrackMetaData.to_dict()
+               music = currentTrackMetaData['title'] + " - " + currentTrackMetaData['creator']
+               self.musicLabel.set_markup("<span size=\"12000\"><b>" + music + "</b></span>")
+
+               if self.topLevel.get_selected_zone() is not None:
+                  self.albumArtUri = self.topLevel.get_selected_zone().sonos.music_library.build_album_art_full_uri(currentTrackMetaData['album_art_uri'])
+                  response = requests.get(self.albumArtUri)
+                  if response.status_code == 200:
+                     input_stream = Gio.MemoryInputStream.new_from_data(response.content, None) 
+                     pixbuf = GdkPixbuf.Pixbuf()
+                     pixbuf = pixbuf.new_from_stream(input_stream, None).scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
+                     self.albumArtImage.set_from_pixbuf(pixbuf)
+            else:
+               self.musicLabel.set_markup("<span size=\"12000\"><b>[no music]</b></span>")
+               self.albumArtImage.set_from_icon_name(Gtk.STOCK_CDROM, Gtk.IconSize.DIALOG)
+      finally:
+         mutex.release()
 
    def on_Button_A_Clicked(self):
       pass
 
    def on_Button_B_Clicked(self):
-       pass
+      pass
 
    def on_Button_C_Clicked(self):
-       self.topLevel.show_queue_page()
+      pass
 
    def on_Return_Button_Clicked(self):
       self.topLevel.show_page("MusicPlayingPage")
@@ -34,31 +94,32 @@ class MusicAlbumArtPage(PageBase):
       self.topLevel.show_page("MusicPlayingPage")
 
    def title(self):
-      self.titleLabel = Gtk.Label("Now Playing (Album Art)")
-      return(self.titleLabel)
+      #self.titleLabel = Gtk.Label("Now Playing (Album Art)")
+      return(Gtk.VBox())
 
    def scrolledWindow(self):
-      sw = Gtk.ScrolledWindow()
-      sw.set_policy(1, 1)
-#      Gtk.POLICY_AUTOMATIC, Gtk.POLICY_AUTOMATIC)
-#      sw.add(self.zoneListView)
-      return(sw)
+      vbox = Gtk.VBox()
+
+      self.albumArtImage = Gtk.Image()
+      self.albumArtImage.set_from_icon_name(Gtk.STOCK_CDROM, Gtk.IconSize.DIALOG)
+      self.albumArtImage.show()
+      vbox.pack_start(self.albumArtImage, True, True, 5)
+
+      self.musicLabel = Gtk.Label()
+      music = "[no music]"
+      self.musicLabel.set_markup("<span size=\"12000\"><b>" + music + "</b></span>")
+      self.musicLabel.set_ellipsize(Pango.EllipsizeMode.END)
+      vbox.pack_start(self.musicLabel, False, False, 0)
+
+      return(vbox)
 
    def status(self):
       pass
 
    def footer(self):
-      grid = Gtk.Grid()
-      l = Gtk.Label("View Clock")
-      l.set_size_request(100, -1)
-      grid.add(l)
-      l = Gtk.Label(" ")
-      l.set_size_request(100, -1)
-      grid.attach(l, 1, 0, 1, 1)
-      l = Gtk.Label("View Queue")
-      l.set_size_request(100, -1)
-      grid.attach(l, 2, 0, 1, 1)
-      return grid
+      return Gtk.VBox()
 
-   def __init__(self):
-      super().__init__()
+   def __init__(self, topLevel):
+      super().__init__(topLevel)
+      self.zlistener = self.zoneListener(self)
+      self.topLevel.add_zone_listener(self.__class__.__name__, self.zlistener)

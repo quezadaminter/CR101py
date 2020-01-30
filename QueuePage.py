@@ -3,6 +3,9 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf
 from PageBase import PageBase
 from enum import Enum
+from zoneListener import ZoneListener
+
+
 
 class EditQueueDialog(Gtk.Dialog):
 
@@ -89,6 +92,33 @@ class QueuePage(PageBase):
       MOVE = 3
       SAVE = 4
 
+   class zoneListener(ZoneListener):
+      def __init__(self, owner):
+         super().__init__(owner)
+
+      def on_selected_zone_changed(self):
+         #Consider refreshing the queue
+         #although this should not happen
+         #to the controller from the QueuePage.
+         pass
+
+      def on_zone_transport_change_event(self, event):
+         #Update the icon on the list that shows
+         #the current track playback state
+         pass
+
+      def on_zone_render_change_event(self, event):
+         pass
+
+      def on_zone_queue_update_begin(self):
+         self.owner.on_zone_queue_update_begin()
+
+      def on_zone_queue_update_end(self):
+         self.owner.on_zone_queue_update_end()
+
+      def on_current_track_update_state(self, trackInfo):
+         pass
+   
    def closeEditDialog(self):
       self.editQueueDialog.destroy()
       self.editQueueDialog = None
@@ -295,10 +325,12 @@ class QueuePage(PageBase):
 
       return grid
 
-   def __init__(self):
-      super().__init__()
+   def __init__(self, topLevel):
+      super().__init__(topLevel)
       self.editQueueDialog = None
       self.saveQueueDialog = None
       self.bButtonLabel = None
       self.moveStore = None
       self.state = self.State.LIST
+      self.zlistener = self.zoneListener(self)
+      self.topLevel.add_zone_listener(self.__class__.__name__, self.zlistener)

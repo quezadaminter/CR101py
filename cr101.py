@@ -1,9 +1,8 @@
-#!/bin/python
+#!/bin/python3
 import soco
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-#from socos.exceptions import SoCoIllegalSeekException, SocosException
 import zonesPage
 from zonesPage import ZonesPage, Zones
 from MusicPage import MusicPage
@@ -19,7 +18,7 @@ from Zone import Zone
 from threading import Thread, Event
 import time
 from mediaListTracksPage import MediaListTracksPage
-
+from zoneListener import ZoneListener
 
 def moduleExists(module_name):
    try:
@@ -31,70 +30,33 @@ def moduleExists(module_name):
 
 class PyApp(Gtk.Window):
 
+   class zoneListener(ZoneListener):
+      def __init__(self, owner):
+         super().__init__(owner)
+
+      def on_selected_zone_changed(self):
+         for key, value in self.owner.zoneListeners.items():
+            value.on_selected_zone_changed()
+
+      def on_zone_transport_change_event(self, event):
+         for key, value in self.owner.zoneListeners.items():
+            value.on_zone_transport_change_event(event)
+
+      def on_zone_render_change_event(self, event):
+         for key, value in self.owner.zoneListeners.items():
+            value.on_zone_render_change_event(event)
+
+      def on_zone_queue_update_begin(self):
+         for key, value in self.owner.zoneListeners.items():
+            value.on_zone_queue_update_begin()
+
+      def on_zone_queue_update_end(self):
+         for key, value in self.owner.zoneListeners.items():
+            value.on_zone_queue_update_end()
    
-
-#   def on_zoneButton_Clicked(self, button, zone):
-#      print("Clicked " +  button.get_label())
-#      self.selectedZone = zone
-#      result = self.get_queue(zone)
-#
-#      if result is None:
-#         pass
-#      elif not isinstance(result, str):
-#         try:
-#            self.qStore.clear()
-#            for line in result:
-#               x = ""
-#               if line[2] == True:
-#                   x = "*"
-#               self.qStore.append([x, line[0], line[1].title, line[1].creator])
-#         except (KeyError, ValueError, TypeError, SocosException,
-#                SoCoIllegalSeekException) as ex:
-#            err(ex)
-##            return None
-#      else:
-#         print(result)
-
-#   def on_zonePlayButton_Clicked(self, button, sonos):
-#      """Play an item from the playlist"""
-#      if self.selectedZone is not None:
-#          index = int(index)
-#          queue_length = self.get_queue_length(sonos)
-#
-#          if is_index_in_queue(index, queue_length):
-#            # Translate from socos one-based to SoCo zero-based
-#            index -= 1
-#            position = sonos.get_current_track_info()['playlist_position']
-#            current = int(position) - 1
-#            if index != current:
-##                return sonos.play_from_queue(index)
-#                sonos.play_from_queue(index)
-#          else:
-#             error = "Index %d is not within range 1 - %d" % \
-#                   (index, queue_length)
-#             raise ValueError(error)
-#      print("PLAY! " +  button.get_label())
-
-#   def on_zoneStopButton_Clicked(self, button, sonos):
-#      print("STOP! " +  button.get_label())
-
-#   def on_zoneScanButton_Clicked(self, button, label):
-#      print("SCAN! " +  button.get_label())
-#      self.vbox.remove(self.zoneButtonBox)
-#      self.zoneButtonBox = Gtk.HButtonBox()
-#      self.vbox.pack_start(self.zoneButtonBox, False, False, 5)
-#      zones = soco.discover()
-#      if zones is not None and len(zones) > 0:
-#         label.set_label(str(len(zones)) + " Zone(s) Available")
-#         for zone in zones:
-#            z = Gtk.Button(zone.player_name)
-#            z.connect("clicked", self.on_zoneButton_Clicked, zone)
-#            self.zoneButtonBox.pack_start(z, False, False, 1)
-#      else:
-#         label.set_label("No Zones Available")
-#         print("No zones found!")
-#
-#      self.show_all()
+      def on_current_track_update_state(self, trackInfo):
+         for key, value in self.owner.zoneListeners.items():
+            value.on_current_track_update_state(trackInfo)
 
    def on_Zones_Button_Clicked(self, button):
       self.pageInView.on_zoneButton_Clicked()
@@ -237,8 +199,12 @@ class PyApp(Gtk.Window):
       self.queueRevealer.set_reveal_child(True)
 #      self.pageInView.show()
 
-   def on_selected_zone_changed(self, zone):
-      pass
+   def add_zone_listener(self, id, listener):
+      self.zoneListeners[id] = listener
+
+   def remove_zone_listener(self, id):
+      if id in self.zoneListeners:
+         self.zoneListeners.pop(id)
 
    def on_destroy(self, widget):
       self.RunEventThread = False
@@ -252,27 +218,32 @@ class PyApp(Gtk.Window):
    def __init__(self):
       super(PyApp, self).__init__()
 
+      self.zoneListeners = {}
+      
       self.pageDict = {
-         "ZonesPage" : ZonesPage(),
-         "MusicPage" : MusicPage(),
-         "MusicPlayingPage" : MusicPlayingPage(),
-         "MusicAlbumArtPage" : MusicAlbumArtPage(),
-         "QueuePage" : QueuePage(),
-         "MusicLibraryPage" : MusicLibraryPage(),
-         "MediaListArtistsPage" : MediaListArtistsPage(),
-         "MediaListAlbumsPage" : MediaListAlbumsPage(),
-         "MediaListTracksPage" : MediaListTracksPage(),
-         "SystemSettingsPage" : SystemSettingsPage(),
+         "ZonesPage" : ZonesPage(self),
+         "MusicPage" : MusicPage(self),
+         "MusicPlayingPage" : MusicPlayingPage(self),
+         "MusicAlbumArtPage" : MusicAlbumArtPage(self),
+         "QueuePage" : QueuePage(self),
+         "MusicLibraryPage" : MusicLibraryPage(self),
+         "MediaListArtistsPage" : MediaListArtistsPage(self),
+         "MediaListAlbumsPage" : MediaListAlbumsPage(self),
+         "MediaListTracksPage" : MediaListTracksPage(self),
+         "SystemSettingsPage" : SystemSettingsPage(self),
          "PastPage" : None
          }
 
+      self.zlistener = self.zoneListener(self)
+
       self.pageInView = self.pageDict["ZonesPage"]
+      self.pageInView.set_listener(self.zlistener)
 
       self.RunEventThread = True
       self.eventThread = Thread(target = self.eventThreadHandler)
-      for p in self.pageDict.values():
-         if p is not None:
-            p.set_top_level(self)
+#      for p in self.pageDict.values():
+#         if p is not None:
+#            p.set_top_level(self)
 
 #      self.set_default_size(480, 320)
       self.set_default_size(620, 320)

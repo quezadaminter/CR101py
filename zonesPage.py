@@ -6,6 +6,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf
 from PageBase import PageBase
 from Zone import Zone
+from zoneListener import ZoneListener
 
 Zones = []
 
@@ -82,8 +83,11 @@ class ZonesPage(PageBase):
           print("Selected: ", model.get_value(treeiter, 1))
 
    def on_zone_transport_change_event(self, event):
-      mp = self.topLevel.get_page("MusicPlayingPage")
-      mp.on_zone_transport_change_event(event)
+      if self.zoneListener is not None:
+         self.zoneListener.on_zone_transport_change_event(event)
+
+#      mp = self.topLevel.get_page("MusicPlayingPage")
+#      mp.on_zone_transport_change_event(event)
 
       for row in self.zoneStore:
          if row[1] == event.service.soco.player_name:
@@ -91,21 +95,30 @@ class ZonesPage(PageBase):
             break
 
    def on_zone_render_change_event(self, event):
+      if self.zoneListener is not None:
+         self.zoneListener.on_zone_render_change_event(event)
+
       for row in self.zoneStore:
          if row[1] == event.service.soco.player_name:
             break
 
    def on_zone_queue_update_begin(self):
-      qp = self.topLevel.get_page("QueuePage")
-      qp.on_zone_queue_update_begin()
+      if self.zoneListener is not None:
+         self.zoneListener.on_zone_queue_update_begin()
+#      qp = self.topLevel.get_page("QueuePage")
+#      qp.on_zone_queue_update_begin()
 
    def on_zone_queue_update_end(self):
-      qp = self.topLevel.get_page("QueuePage")
-      qp.on_zone_queue_update_end()
+      if self.zoneListener is not None:
+         self.zoneListener.on_zone_queue_update_end()
+#      qp = self.topLevel.get_page("QueuePage")
+#      qp.on_zone_queue_update_end()
 
    def on_current_track_update_state(self, trackInfo):
-      mp = self.topLevel.get_page("MusicPlayingPage")
-      mp.on_current_track_update_state(trackInfo)
+      if self.zoneListener is not None:
+         self.zoneListener.on_current_track_update_state(trackInfo)
+#      mp = self.topLevel.get_page("MusicPlayingPage")
+#      mp.on_current_track_update_state(trackInfo)
 
    def title(self):
       self.titleLabel = Gtk.Label("Rooms")
@@ -177,8 +190,12 @@ class ZonesPage(PageBase):
 #      hbox.pack_start(l, True, False, 0)
       return grid
 
-   def __init__(self):
-      super().__init__()
+   def set_listener(self, listener):
+      self.zoneListener = listener
+
+   def __init__(self, topLevel):
+      super().__init__(topLevel)
+      self.zoneListener = None
 
    def scanForZones(self):
       print("SCAN!")

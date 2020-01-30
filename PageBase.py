@@ -66,13 +66,13 @@ class PageBase(Gtk.VBox):
    def footer(self):
        pass
 
-   def set_top_level(self, tl):
-       self.topLevel = tl
+#   def set_top_level(self, tl):
+#       self.topLevel = tl
 
-   def __init__(self):
+   def __init__(self, topLevel):
       super().__init__(self, Gtk.Orientation.HORIZONTAL, 6)
       # Initialize data members
-      self.topLevel = None
+      self.topLevel = topLevel
       self.selectedZone = None
       self.fromPage = None
       # Build the basic GUI structure of

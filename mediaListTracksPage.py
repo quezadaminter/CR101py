@@ -176,6 +176,6 @@ class MediaListTracksPage(MediaListItemsPage):
       else:
          self.libStore.append(["No Tracks Found", self.arrowMore, True, None])
 
-   def __init__(self):
-      super().__init__()
+   def __init__(self, topLevel):
+      super().__init__(topLevel)
       self.trackDialog = None
