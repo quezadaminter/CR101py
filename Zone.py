@@ -76,6 +76,9 @@ class Zone():
       self.update_queue()
       return(self.qStore)
 
+   def get_queue_length(self):
+      return(self.qStore.size())
+
    def volume(self, *args):
         """Change or show the volume of a device"""
         if not args:
@@ -108,16 +111,17 @@ class Zone():
         """Show the current track"""
         track = self.sonos.get_current_track_info()
         print(track)
-        return (
-            "Current track: %s - %s. From album %s. This is track number"
-            " %s in the playlist. It is %s minutes long." % (
-                track['artist'],
-                track['title'],
-                track['album'],
-                track['playlist_position'],
-                track['duration'],
-            )
-        )
+        return(track)
+#        return (
+#            "Current track: %s - %s. From album %s. This is track number"
+#            " %s in the playlist. It is %s minutes long." % (
+#                track['artist'],
+#                track['title'],
+#                track['album'],
+#                track['playlist_position'],
+#                track['duration'],
+#            )
+#        )
 
    def remove_track_from_queue(self, position):
       p = self.sonos.get_current_track_info()['playlist_position']

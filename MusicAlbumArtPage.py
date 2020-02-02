@@ -40,8 +40,45 @@ class MusicAlbumArtPage(PageBase):
       super().on_Page_Entered_View(SelectedZone)
       if self.selectedZone is not None:
          self.on_zone_transport_change_event(self.selectedZone.get_current_transport_info())
-#         self.on_current_track_update_state(zone.get_current_track_info())
+         self.on_current_track_update_state(self.selectedZone.get_current_track_info())
       print("Album art in view")
+
+   def on_current_track_update_state(self, trackInfo):
+      mutex.acquire()
+
+      try:
+         if isinstance(trackInfo, dict):
+            self.set_album_art(trackInfo)
+            
+            if trackInfo['artist'] == "" or trackInfo["title"] == "":
+               self.musicLabel.set_markup("<span size=\"12000\"><b>[no music]</b></span>")
+            else:
+               music = GLib.markup_escape_text(trackInfo['title'] + " - " + trackInfo['artist'])
+               self.musicLabel.set_markup("<span size=\"12000\"><b>" + music + "</b></span>")
+            
+
+      finally:
+         mutex.release()
+
+   def set_album_art(self, data):
+      artUri = ""
+      if 'album_art_uri' in data:
+         artUri = data['album_art_uri']
+      elif 'album_art' in data:
+         artUri = data['album_art']
+
+      if artUri != "":
+         self.albumArtUri = self.topLevel.get_selected_zone().sonos.music_library.build_album_art_full_uri(artUri)
+         response = requests.get(self.albumArtUri)
+         if response.status_code == 200:
+            input_stream = Gio.MemoryInputStream.new_from_data(response.content, None) 
+            pixbuf = GdkPixbuf.Pixbuf()
+            pixbuf = pixbuf.new_from_stream(input_stream, None).scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
+            self.albumArtImage.set_from_pixbuf(pixbuf)
+      else:
+         self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
+         pixbuf = self.albumArtImage.get_pixbuf().scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
+         self.albumArtImage.set_from_pixbuf(pixbuf)
 
    def on_zone_transport_change_event(self, event):
       mutex.acquire()
@@ -59,14 +96,9 @@ class MusicAlbumArtPage(PageBase):
                music = GLib.markup_escape_text(currentTrackMetaData['title'] + " - " + currentTrackMetaData['creator'])
                self.musicLabel.set_markup("<span size=\"12000\"><b>" + music + "</b></span>")
 
-               if self.topLevel.get_selected_zone() is not None and 'album_art_uri' in currentTrackMetaData:
-                  self.albumArtUri = self.topLevel.get_selected_zone().sonos.music_library.build_album_art_full_uri(currentTrackMetaData['album_art_uri'])
-                  response = requests.get(self.albumArtUri)
-                  if response.status_code == 200:
-                     input_stream = Gio.MemoryInputStream.new_from_data(response.content, None) 
-                     pixbuf = GdkPixbuf.Pixbuf()
-                     pixbuf = pixbuf.new_from_stream(input_stream, None).scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
-                     self.albumArtImage.set_from_pixbuf(pixbuf)
+               #if self.topLevel.get_selected_zone() is not None and 'album_art_uri' in currentTrackMetaData:
+               if self.topLevel.get_selected_zone() is not None:
+                  self.set_album_art(currentTrackMetaData)
                else:
                   self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
                   pixbuf = self.albumArtImage.get_pixbuf().scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
