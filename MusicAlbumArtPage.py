@@ -1,6 +1,6 @@
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GdkPixbuf
+from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
 from gi.repository import Gio
 from gi.repository import Pango
 from PageBase import PageBase
@@ -17,10 +17,12 @@ class MusicAlbumArtPage(PageBase):
          super().__init__(owner)
 
       def on_selected_zone_changed(self):
-         self.owner.on_Page_Entered_View(None)
+         if self.owner.pageInView == True:
+            self.owner.on_Page_Entered_View(None)
 
       def on_zone_transport_change_event(self, event):
-         self.owner.on_zone_transport_change_event(event)
+         if self.owner.pageInView == True:
+            self.owner.on_zone_transport_change_event(event)
 
       def on_zone_render_change_event(self, event):
          pass
@@ -35,9 +37,9 @@ class MusicAlbumArtPage(PageBase):
          pass
 
    def on_Page_Entered_View(self, SelectedZone):
-      zone = self.topLevel.get_selected_zone()
-      if zone is not None:
-         self.on_zone_transport_change_event(zone.get_current_transport_info())
+      super().on_Page_Entered_View(SelectedZone)
+      if self.selectedZone is not None:
+         self.on_zone_transport_change_event(self.selectedZone.get_current_transport_info())
 #         self.on_current_track_update_state(zone.get_current_track_info())
       print("Album art in view")
 
@@ -54,10 +56,10 @@ class MusicAlbumArtPage(PageBase):
             currentTrackMetaData = varDict['current_track_meta_data']
             if currentTrackMetaData is not '':
                currentTrackMetaData = currentTrackMetaData.to_dict()
-               music = currentTrackMetaData['title'] + " - " + currentTrackMetaData['creator']
+               music = GLib.markup_escape_text(currentTrackMetaData['title'] + " - " + currentTrackMetaData['creator'])
                self.musicLabel.set_markup("<span size=\"12000\"><b>" + music + "</b></span>")
 
-               if self.topLevel.get_selected_zone() is not None:
+               if self.topLevel.get_selected_zone() is not None and 'album_art_uri' in currentTrackMetaData:
                   self.albumArtUri = self.topLevel.get_selected_zone().sonos.music_library.build_album_art_full_uri(currentTrackMetaData['album_art_uri'])
                   response = requests.get(self.albumArtUri)
                   if response.status_code == 200:
@@ -65,9 +67,15 @@ class MusicAlbumArtPage(PageBase):
                      pixbuf = GdkPixbuf.Pixbuf()
                      pixbuf = pixbuf.new_from_stream(input_stream, None).scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
                      self.albumArtImage.set_from_pixbuf(pixbuf)
+               else:
+                  self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
+                  pixbuf = self.albumArtImage.get_pixbuf().scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
+                  self.albumArtImage.set_from_pixbuf(pixbuf)
             else:
                self.musicLabel.set_markup("<span size=\"12000\"><b>[no music]</b></span>")
-               self.albumArtImage.set_from_icon_name(Gtk.STOCK_CDROM, Gtk.IconSize.DIALOG)
+               self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
+               pixbuf = self.albumArtImage.get_pixbuf().scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
+               self.albumArtImage.set_from_pixbuf(pixbuf)
       finally:
          mutex.release()
 
@@ -101,7 +109,9 @@ class MusicAlbumArtPage(PageBase):
       vbox = Gtk.VBox()
 
       self.albumArtImage = Gtk.Image()
-      self.albumArtImage.set_from_icon_name(Gtk.STOCK_CDROM, Gtk.IconSize.DIALOG)
+      self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
+      pixbuf = self.albumArtImage.get_pixbuf().scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
+      self.albumArtImage.set_from_pixbuf(pixbuf)
       self.albumArtImage.show()
       vbox.pack_start(self.albumArtImage, True, True, 5)
 

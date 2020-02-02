@@ -22,9 +22,6 @@ class Dialog(Gtk.Dialog):
 
 class MusicLibraryPage(PageBase):
 
-   def on_Page_Entered_View(self, SelectedZone):
-      self.selectedZone = SelectedZone
-
    def on_Button_A_Clicked(self):
       pass
 

@@ -1,6 +1,6 @@
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GdkPixbuf
+from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
 from gi.repository import Pango
 from gi.repository import Gio
 from PageBase import PageBase
@@ -8,6 +8,7 @@ from threading import Lock
 from enum import Enum
 from zoneListener import ZoneListener
 import requests
+import html
 
 mutex = Lock()
 
@@ -87,10 +88,12 @@ class MusicPlayingPage(PageBase):
          super().__init__(owner)
 
       def on_selected_zone_changed(self):
-         self.owner.on_Page_Entered_View(None)
+         if self.owner.pageInView == True:
+            self.owner.on_Page_Entered_View(None)
 
       def on_zone_transport_change_event(self, event):
-         self.owner.on_zone_transport_change_event(event)
+         if self.owner.pageInView == True:
+            self.owner.on_zone_transport_change_event(event)
 
       def on_zone_render_change_event(self, event):
          pass
@@ -131,12 +134,12 @@ class MusicPlayingPage(PageBase):
       super().on_zoneButton_Clicked()
 
    def on_Page_Entered_View(self, SelectedZone):
+      super().on_Page_Entered_View(SelectedZone)
       # Update the page when it shows up with
       # the latest information.
-      zone = self.topLevel.get_selected_zone()
-      if zone is not None:
-         self.on_zone_transport_change_event(zone.get_current_transport_info())
-         self.on_current_track_update_state(zone.get_current_track_info())
+      if self.selectedZone is not None:
+         self.on_zone_transport_change_event(self.selectedZone.get_current_transport_info())
+         self.on_current_track_update_state(self.selectedZone.get_current_track_info())
       print("Music playing view")
 
    def on_Button_A_Clicked(self):
@@ -188,16 +191,18 @@ class MusicPlayingPage(PageBase):
             currentPlayMode = varDict['current_play_mode']
             if currentPlayMode == 'SHUFFLE_NOREPEAT':
                self.playModeRepeatImage.clear()
-               self.playModeShuffleImage.set_from_icon_name(Gtk.STOCK_FIND, Gtk.IconSize.SMALL_TOOLBAR)
+               #self.playModeShuffleImage.set_from_icon_name(Gtk.STOCK_FIND, Gtk.IconSize.SMALL_TOOLBAR)
+               self.playModeShuffleImage.set_from_file('./images/Shuffle.png')
             elif currentPlayMode == 'REPEAT_ALL':
-               self.playModeRepeatImage.set_from_icon_name(Gtk.STOCK_REFRESH, Gtk.IconSize.SMALL_TOOLBAR)
+               self.playModeRepeatImage.set_from_file('./images/Repeat.png')
                self.playModeShuffleImage.clear()
             elif currentPlayMode == 'NORMAL':
                self.playModeRepeatImage.clear()
                self.playModeShuffleImage.clear()
             elif currentPlayMode == 'SHUFFLE': # shuffle and repeat
-               self.playModeRepeatImage.set_from_icon_name(Gtk.STOCK_REFRESH, Gtk.IconSize.SMALL_TOOLBAR)
-               self.playModeShuffleImage.set_from_icon_name(Gtk.STOCK_FIND, Gtk.IconSize.SMALL_TOOLBAR)
+               self.playModeRepeatImage.set_from_file('./images/Repeat.png')
+               #self.playModeShuffleImage.set_from_icon_name(Gtk.STOCK_FIND, Gtk.IconSize.SMALL_TOOLBAR)
+               self.playModeShuffleImage.set_from_file('./images/Shuffle.png')
 
          if 'transport_state' in varDict:
             xportState = varDict['transport_state']
@@ -217,7 +222,7 @@ class MusicPlayingPage(PageBase):
          if 'current_crossfade_mode' in varDict:
             self.crossFadeMode = varDict['current_crossfade_mode']
             if self.crossFadeMode == '1':
-               self.crossFadeImage.set_from_icon_name(Gtk.STOCK_NETWORK, Gtk.IconSize.SMALL_TOOLBAR)
+               self.crossFadeImage.set_from_file('./images/CrossFade.png')
             else:
                self.crossFadeImage.clear()
 
@@ -225,11 +230,12 @@ class MusicPlayingPage(PageBase):
             nextTrackMetaData = varDict['next_track_meta_data']
             if nextTrackMetaData is not '':
                nextTrackMetaData = nextTrackMetaData.to_dict()
-               nextTrackTitle = nextTrackMetaData['title']
-               nextTrackArtist = nextTrackMetaData['creator']
+               nextTrackTitle = GLib.markup_escape_text(nextTrackMetaData['title'])
+               nextTrackArtist = GLib.markup_escape_text(nextTrackMetaData['creator'])
                string = "<b>{0} - {1}</b>"
                self.nextTrackLabel.set_text("Next: ")
-               self.nextTrackNameLabel.set_markup(string.format(nextTrackTitle, nextTrackArtist))
+               string = string.format(nextTrackTitle, nextTrackArtist)
+               self.nextTrackNameLabel.set_markup(string)
             else:
                self.nextTrackLabel.set_text("")
                self.nextTrackNameLabel.set_text("")
@@ -252,13 +258,16 @@ class MusicPlayingPage(PageBase):
             currentTrackMetaData = varDict['current_track_meta_data']
             if currentTrackMetaData is not '':
                currentTrackMetaData = currentTrackMetaData.to_dict()
-               self.trackNameLabel.set_markup("<b>" + currentTrackMetaData['title'] + "</b>")
-               self.artistsNameLabel.set_markup("<b>" + currentTrackMetaData['creator'] + "</b>")
-               self.albumNameLabel.set_markup("<b>" + currentTrackMetaData['album'] + "</b>")
+               string = GLib.markup_escape_text(currentTrackMetaData['title'])
+               self.trackNameLabel.set_markup("<b>" + string + "</b>")
+               string = GLib.markup_escape_text(currentTrackMetaData['creator'])
+               self.artistsNameLabel.set_markup("<b>" + string + "</b>")
+               string = GLib.markup_escape_text(currentTrackMetaData['album'])
+               self.albumNameLabel.set_markup("<b>" + string + "</b>")
                self.trackProgressBar.show()
                self.trackProgressTimeLabel.show()
 
-               if self.topLevel.get_selected_zone() is not None:
+               if self.topLevel.get_selected_zone() is not None and 'album_art_uri' in varDict:
                   self.albumArtUri = self.topLevel.get_selected_zone().sonos.music_library.build_album_art_full_uri(currentTrackMetaData['album_art_uri'])
                   response = requests.get(self.albumArtUri)
                   if response.status_code == 200:
@@ -266,11 +275,14 @@ class MusicPlayingPage(PageBase):
                      pixbuf = GdkPixbuf.Pixbuf()
                      pixbuf = pixbuf.new_from_stream(input_stream, None).scale_simple(128, 128, GdkPixbuf.InterpType.BILINEAR)
                      self.albumArtImage.set_from_pixbuf(pixbuf)
+               else:
+                  #Display the blank album art image
+                  self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
             else:
                self.trackNameLabel.set_markup("<b>[no music]</b>")
                self.artistsNameLabel.set_text("")
                self.albumNameLabel.set_text("")
-               self.albumArtImage.set_from_icon_name(Gtk.STOCK_CDROM, Gtk.IconSize.DIALOG)
+               self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
                self.trackProgressBar.hide()
                self.trackProgressTimeLabel.hide()
       finally:
@@ -320,19 +332,19 @@ class MusicPlayingPage(PageBase):
       xportStateLabel.set_alignment(0.0, 0.5)
       stateHBox.pack_start(xportStateLabel, True, True, 5)
       self.crossFadeImage = Gtk.Image()
-      self.crossFadeImage.set_from_icon_name(Gtk.STOCK_NETWORK, Gtk.IconSize.SMALL_TOOLBAR)
+      self.crossFadeImage.set_from_file('./images/CrossFade.png')
       stateHBox.pack_start(self.crossFadeImage, False, False, 5)
       self.playModeShuffleImage = Gtk.Image()
-      self.playModeShuffleImage.set_from_icon_name(Gtk.STOCK_FIND, Gtk.IconSize.SMALL_TOOLBAR)
+      self.playModeShuffleImage.set_from_file('./images/Shuffle.png')
       stateHBox.pack_start(self.playModeShuffleImage, False, False, 5)
       self.playModeRepeatImage = Gtk.Image()
-      self.playModeRepeatImage.set_from_icon_name(Gtk.STOCK_REFRESH, Gtk.IconSize.SMALL_TOOLBAR)
+      self.playModeRepeatImage.set_from_file('./images/Repeat.png')
       stateHBox.pack_start(self.playModeRepeatImage, False, False, 5)
       topVbox.pack_start(stateHBox, False, False, 0)
 
       detailHBox = Gtk.HBox()
       self.albumArtImage = Gtk.Image()
-      self.albumArtImage.set_from_icon_name(Gtk.STOCK_CDROM, Gtk.IconSize.DIALOG)
+      self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
       self.albumArtImage.show()
       detailHBox.pack_start(self.albumArtImage, False, False, 5)
 

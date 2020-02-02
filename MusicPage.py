@@ -5,12 +5,6 @@ from PageBase import PageBase
 
 class MusicPage(PageBase):
 
-#   def on_zoneButton_Clicked(self):
-#       print("Music Button clicked")
-
-   def on_Page_Entered_View(self, SelectedZone):
-      print("Music in view")
-
    def on_Button_A_Clicked(self):
       pass
 

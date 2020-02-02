@@ -10,9 +10,6 @@ from abc import ABCMeta, abstractmethod
 class MediaListItemsPage(PageBase):
    __metaclass__=ABCMeta
    
-   def on_Page_Entered_View(self, SelectedZone):
-      self.selectedZone = SelectedZone
-
    def on_zoneButton_Clicked(self):
       super().on_zoneButton_Clicked()
 

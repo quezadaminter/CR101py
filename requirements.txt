@@ -1,0 +1,3 @@
+soco
+requests
+gi

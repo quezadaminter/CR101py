@@ -99,6 +99,8 @@ class PyApp(Gtk.Window):
       else:
          self.pageInView.hide()
 
+      self.pageInView.on_Page_Exit_View()
+
       if isinstance(page, str) and page == "PastPage":
          page = self.pageDict["PastPage"]
 

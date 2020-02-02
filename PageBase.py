@@ -16,9 +16,12 @@ class PageBase(Gtk.VBox):
       else:
          self.topLevel.show_page("MusicPage")
 
-   @abstractmethod
+   def on_Page_Exit_View(self):
+      self.pageInView = False
+
    def on_Page_Entered_View(self, selectedZone):
-       pass
+      self.pageInView = True
+      self.selectedZone = selectedZone
 
    # The row of buttons at the bottom of the screen
    @abstractmethod
@@ -75,6 +78,7 @@ class PageBase(Gtk.VBox):
       self.topLevel = topLevel
       self.selectedZone = None
       self.fromPage = None
+      self.pageInView = False
       # Build the basic GUI structure of
       # the interface pages.
       self.set_homogeneous(False)

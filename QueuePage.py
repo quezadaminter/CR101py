@@ -171,9 +171,9 @@ class QueuePage(PageBase):
        print("Zone Button clicked")
 
    def on_Page_Entered_View(self, zone):
+      super().on_Page_Entered_View(zone)
       if zone is not None:
          print("Queue in view")
-         self.selectedZone = zone
          self.queueStore = zone.get_queue_store()
          self.zoneListView.set_model(self.queueStore)
          self.selected_row_iter = self.queueStore.get_iter_first()
