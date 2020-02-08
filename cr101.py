@@ -19,6 +19,7 @@ from threading import Thread, Event
 import time
 from mediaListTracksPage import MediaListTracksPage
 from zoneListener import ZoneListener
+import imageManager
 
 def moduleExists(module_name):
    try:
@@ -221,7 +222,21 @@ class PyApp(Gtk.Window):
       super(PyApp, self).__init__()
 
       self.zoneListeners = {}
-      
+
+      imageManager.add_image("./images/AlbumArtEmpty.jpg", 'emptyArt')
+      imageManager.add_image("./images/CrossFade.png", 'crossFade')
+      imageManager.add_image("./images/Mute.png", 'mute')
+      imageManager.add_image("./images/NoAlbumArt.jpg", 'noArt')
+      imageManager.add_image("./images/Pause.png", 'pause')
+      imageManager.add_image("./images/Play.png", 'play')
+      imageManager.add_image("./images/Queue.png", 'queue')
+      imageManager.add_image("./images/Repeat.png", 'repeat')
+      imageManager.add_image("./images/separator.png", 'separator')
+      imageManager.add_image("./images/Shuffle.png", 'shuffle')
+      imageManager.add_image("./images/Stop.png", 'stop')
+      imageManager.add_image("./images/Shrug.png", 'shrug')
+      imageManager.add_image("./images/Transition.png", 'transition')
+
       self.pageDict = {
          "ZonesPage" : ZonesPage(self),
          "MusicPage" : MusicPage(self),
@@ -243,9 +258,6 @@ class PyApp(Gtk.Window):
 
       self.RunEventThread = True
       self.eventThread = Thread(target = self.eventThreadHandler)
-#      for p in self.pageDict.values():
-#         if p is not None:
-#            p.set_top_level(self)
 
 #      self.set_default_size(480, 320)
       self.set_default_size(620, 320)

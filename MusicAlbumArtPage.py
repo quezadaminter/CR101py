@@ -6,6 +6,9 @@ from gi.repository import Pango
 from PageBase import PageBase
 from threading import Lock
 from zoneListener import ZoneListener
+from image import Image
+
+import imageManager
 import requests
 
 mutex = Lock()
@@ -71,14 +74,31 @@ class MusicAlbumArtPage(PageBase):
          self.albumArtUri = self.topLevel.get_selected_zone().sonos.music_library.build_album_art_full_uri(artUri)
          response = requests.get(self.albumArtUri)
          if response.status_code == 200:
-            input_stream = Gio.MemoryInputStream.new_from_data(response.content, None) 
-            pixbuf = GdkPixbuf.Pixbuf()
-            pixbuf = pixbuf.new_from_stream(input_stream, None).scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
-            self.albumArtImage.set_from_pixbuf(pixbuf)
+            im = Image(None)
+            im.SetFromStream(response.content)
+            self.albumArtImage.set_from_pixbuf(im.Scale(250, 250))
       else:
-         self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
-         pixbuf = self.albumArtImage.get_pixbuf().scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
-         self.albumArtImage.set_from_pixbuf(pixbuf)
+         self.albumArtImage.set_from_pixbuf(imageManager.get_image('noArt').Scale(250, 250))
+
+#   def set_album_art(self, data):
+#      artUri = ""
+#      if 'album_art_uri' in data:
+#         artUri = data['album_art_uri']
+#      elif 'album_art' in data:
+#         artUri = data['album_art']
+#
+#      if artUri != "":
+#         self.albumArtUri = self.topLevel.get_selected_zone().sonos.music_library.build_album_art_full_uri(artUri)
+#         response = requests.get(self.albumArtUri)
+#         if response.status_code == 200:
+#            input_stream = Gio.MemoryInputStream.new_from_data(response.content, None) 
+#            pixbuf = GdkPixbuf.Pixbuf()
+#            pixbuf = pixbuf.new_from_stream(input_stream, None).scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
+#            self.albumArtImage.set_from_pixbuf(pixbuf)
+#      else:
+#         self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
+#         pixbuf = self.albumArtImage.get_pixbuf().scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
+#         self.albumArtImage.set_from_pixbuf(pixbuf)
 
    def on_zone_transport_change_event(self, event):
       mutex.acquire()
