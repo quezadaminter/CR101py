@@ -74,6 +74,9 @@ class MediaListArtistsPage(MediaListItemsPage):
       sw.add(self.libListView)
       return(sw)
   
+   def prependRow(self):
+      pass
+
    def appendRow(self, item_dict, data_type, DidlItem):
       if item_dict is not None:
          self.libStore.append([self.printPatterns(data_type).format(**item_dict), self.arrowMore, True, None])

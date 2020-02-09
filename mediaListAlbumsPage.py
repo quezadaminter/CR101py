@@ -22,38 +22,6 @@ class Dialog(Gtk.Dialog):
 
 class MediaListAlbumsPage(MediaListItemsPage):
 
-#   def on_zoneButton_Clicked(self, button):
-#       print("Media List Albums Page")
-#
-#   def on_Button_A_Clicked(self):
-#      pass
-#
-#   def on_Button_B_Clicked(self):
-#      #Add to queue only if selected row item (2) is True
-#      pass
-#
-#   def on_Button_C_Clicked(self):
-#       self.topLevel.show_queue_page()
-#
-#   def on_Return_Button_Clicked(self):
-#      self.topLevel.show_page(self.fromPage)
-#
-#   # The scroll wheel
-#   def on_Scroll_Up(self):
-#      if self.selected_row_iter is not None:
-#         self.selected_row_iter = self.libStore.iter_previous(self.selected_row_iter)
-#         if self.selected_row_iter is None:
-#            self.selected_row_iter = self.libStore.get_iter_first()
-#         self.select.select_iter(self.selected_row_iter)
-#
-#   def on_Scroll_Down(self):
-#      if self.selected_row_iter is not None:
-#         last = self.selected_row_iter
-#         self.selected_row_iter = self.libStore.iter_next(self.selected_row_iter)
-#         if self.selected_row_iter is None:
-#            self.selected_row_iter = last
-#         self.select.select_iter(self.selected_row_iter)
-
    def on_Button_Ok_Clicked(self):
       # Enter selected item's function
       model, treeiter = self.select.get_selected()
@@ -67,22 +35,12 @@ class MediaListAlbumsPage(MediaListItemsPage):
                page.clear()
                artist = model.get_value(treeiter, 2)
                album = model.get_value(treeiter, 0)
-               #results = self.selectedZone.sonos.music_library.get_music_library_information(search_type=search_type, start=0, max_items=10, subcategories=[artist, album])#, complete_result=True)
-               results = self.selectedZone.sonos.music_library.get_music_library_information(search_type=search_type, subcategories=[artist, album], complete_result=True)
+               if album == "All":
+                  results = self.selectedZone.sonos.music_library.get_music_library_information(search_type=search_type, subcategories=[artist, ''], complete_result=True)
+               else:
+                  results = self.selectedZone.sonos.music_library.get_music_library_information(search_type=search_type, subcategories=[artist, album], complete_result=True)
                page.set_items(search_type, results, self)
                self.topLevel.show_page(page)
-
-#   def on_tree_selection_changed(self, selection):
-#      # if row item (2) is false hide B button label, else show it
-#       model, treeiter = selection.get_selected()
-#       if treeiter is not None: # and Zones is not None:
-#          print("Selected: ", model.get_value(treeiter, 0))
-#
-#   def on_zone_transport_change_event(self, event):
-#      pass
-#
-#   def on_zone_render_change_event(self, event):
-#      pass
 
    def title(self):
       self.titleLabel = Gtk.Label("Media Albums List")
@@ -120,25 +78,8 @@ class MediaListAlbumsPage(MediaListItemsPage):
       sw.add(self.libListView)
       return(sw)
 
-#   def status(self):
-#      pass
-#
-#   def footer(self):
-#
-#      grid = Gtk.Grid()
-#      l = Gtk.Label(" ")
-#      l.set_size_request(100, -1)
-#      grid.add(l)
-#
-#      l = Gtk.Label("Add to Queue")
-#      l.set_size_request(100, -1)
-#      grid.attach(l, 1, 0, 1, 1)
-#
-#      l = Gtk.Label("View Queue")
-#      l.set_size_request(100, -1)
-#      grid.attach(l, 2, 0, 1, 1)
-#
-#      return grid
+   def prependRow(self):
+      pass
 
    def appendRow(self, item_dict, data_type, DidlItem):
       if item_dict is not None:
@@ -146,46 +87,9 @@ class MediaListAlbumsPage(MediaListItemsPage):
             creator = item_dict['creator']
          else:
             creator = item_dict['parent_id'].rsplit('/', 1)[-1]
-         self.libStore.append([self.printPatterns(data_type).format(**item_dict), self.arrowMore, creator, True, None])
+         self.libStore.append([self.printPatterns(data_type).format(**item_dict), self.arrowMore, creator, True, DidlItem])
       else:
          self.libStore.append(["No Albums Found", self.arrowMore, "None", True, None])
-
-#   def clear(self):
-#      self.libStore.clear()
-
-#   def set_items(self, data_type, results, fromPage):
-#      print_patterns = {
-#            'tracks': '{title}', # on {album} by {creator}',
-#            'albums': '{title}',# by {creator}',
-#            'artists': '{title}',
-#            'composers': '{title}',
-#            'genres': '{title}',
-#            'playlists': '{title}',
-#            'sonos_playlists': '{title}'
-#        }
-#
-#      self.fromPage = fromPage
-#
-#      if results is not None:
-#         #index_length = len(str(len(results)))
-#         for index, item in enumerate(results):
-#            item_dict = item.to_dict()
-#            for key, value in item_dict.items():
-#               if hasattr(value, 'decode'):
-#                  item_dict[key] = value.encode('utf-8')
-#            if 'creator' in item_dict:
-#               creator = item_dict['creator']
-#            else:
-#               creator = item_dict['parent_id'].rsplit('/', 1)[-1]
-#            self.libStore.append([print_patterns[data_type].format(**item_dict), self.arrowMore, creator, True, None])
-#      else:
-#            self.libStore.append(["No Albums Found", self.arrowMore, "None", True, None])
-#
-#      self.selected_row_iter = self.libStore.get_iter_first()
-#      if self.selected_row_iter is not None:
-#         self.select.select_iter(self.selected_row_iter)
-##         number = '({{: >{}}}) '.format(index_length).format(index + 1)
-##         yield number + print_patterns[data_type].format(**item_dict)
 
    def __init__(self, topLevel):
       super().__init__(topLevel)

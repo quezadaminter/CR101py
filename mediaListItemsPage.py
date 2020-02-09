@@ -93,6 +93,10 @@ class MediaListItemsPage(PageBase):
    def appendRow(self, item_dict, data_type, DidlItem):
       pass
 
+   @abstractmethod
+   def prependRow(self):
+      pass
+
    def clear(self):
       self.libStore.clear()
 
@@ -112,13 +116,16 @@ class MediaListItemsPage(PageBase):
       self.fromPage = fromPage
 
       if results is not None:
-         #index_length = len(str(len(results)))
+         index_length = len(str(len(results)))
          for index, item in enumerate(results):
             item_dict = item.to_dict()
             for key, value in item_dict.items():
                if hasattr(value, 'decode'):
                   item_dict[key] = value.encode('utf-8')
             self.appendRow(item_dict, data_type, item)
+
+         if index_length > 0:
+            self.prependRow()
       else:
          self.appendRow(None, data_type, item)
 

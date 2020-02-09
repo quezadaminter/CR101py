@@ -11,9 +11,9 @@ class TrackDialog(Gtk.Dialog):
    def on_tree_selection_changed(self, selection):
        model, treeiter = selection.get_selected()
        if treeiter is not None:
-         print("Selected: ", model.get_value(treeiter, 0))
+         print("Selected: ", model.get_value(treeiter, 1))
 
-         option = model.get_value(treeiter, 1)
+         option = model.get_value(treeiter, 0)
          self.selection = option
 
 # The scroll wheel
@@ -84,12 +84,25 @@ class MediaListTracksPage(MediaListItemsPage):
       else:
          self.closeDialog()
 
+   def on_tree_selection_changed(self, selection):
+       model, treeiter = selection.get_selected()
+       if treeiter is not None:
+          print("Selected: ", model.get_value(treeiter, 1))
+
    def on_Button_B_Clicked(self):
       model, treeiter = self.select.get_selected()
       if treeiter is not None:
          if self.selectedZone is not None:
-            # play or queue the track
-            self.selectedZone.add_to_queue(model.get_value(treeiter, 3))
+            val1 = model.get_value(treeiter, 2)
+            didl = model.get_value(treeiter, 3)
+            if didl is None and val1 == True:
+               # Add all tracks
+               for row in self.libStore:
+                  if row[1] != "All Tracks":
+                     self.topLevel.get_selected_zone().add_to_queue(row[3])
+            elif didl is not None:
+               # play or queue the track
+               self.selectedZone.add_to_queue(didl)
 
    def on_Return_Button_Clicked(self):
       if self.trackDialog is None:
@@ -125,14 +138,23 @@ class MediaListTracksPage(MediaListItemsPage):
                response = self.trackDialog.get_response()
                self.closeDialog()
                if self.topLevel.get_selected_zone() is not None:
-                  if response == 0:
-                     self.topLevel.get_selected_zone().play_now(model.get_value(treeiter, 3))
-                  elif response == 1:
-                     self.topLevel.get_selected_zone().play_next(model.get_value(treeiter, 3))
-                  elif response == 2:
-                     self.topLevel.get_selected_zone().add_to_queue(model.get_value(treeiter, 3))
-                  elif response == 3:
-                     self.topLevel.get_selected_zone().play_now_and_replace_queue(model.get_value(treeiter, 3))
+                  val1 = model.get_value(treeiter, 2)
+                  didl = model.get_value(treeiter, 3)
+                  if val1 is True and didl is None:
+                     # Add all tracks
+                     # TODO: Implement the other queueing modes as listed below.
+                     for row in self.libStore:
+                        if row[1] != "All Tracks":
+                           self.topLevel.get_selected_zone().add_to_queue(row[3])
+                  elif didl is not None:
+                     if response == 0:
+                        self.topLevel.get_selected_zone().play_now(model.get_value(treeiter, 3))
+                     elif response == 1:
+                        self.topLevel.get_selected_zone().play_next(model.get_value(treeiter, 3))
+                     elif response == 2:
+                        self.topLevel.get_selected_zone().add_to_queue(model.get_value(treeiter, 3))
+                     elif response == 3:
+                        self.topLevel.get_selected_zone().play_now_and_replace_queue(model.get_value(treeiter, 3))
 
    def title(self):
       self.titleLabel = Gtk.Label("Media Tracks List")
@@ -140,23 +162,23 @@ class MediaListTracksPage(MediaListItemsPage):
 
    def scrolledWindow(self):
       self.arrowMore = Gtk.IconTheme.get_default().load_icon("image-loading", 16, 0)
-      self.libStore = Gtk.ListStore(str, GdkPixbuf.Pixbuf, bool, object)
+      self.libStore = Gtk.ListStore(GdkPixbuf.Pixbuf, str, bool, object)
       self.libListView = Gtk.TreeView(self.libStore)
       self.libListView.set_headers_visible(False)
 
+      rend = Gtk.CellRendererPixbuf()
+      rend.set_property('cell-background', 'white')
+      col = Gtk.TreeViewColumn("I", rend, pixbuf = 0)
+      col.set_resizable(False)
+      col.set_expand(False)
+      self.libListView.append_column(col)
+
       rend = Gtk.CellRendererText()
-      col = Gtk.TreeViewColumn("Type", rend, text=0)
+      col = Gtk.TreeViewColumn("Type", rend, text=1)
       col.set_resizable(False)
       col.set_expand(False)
       self.libListView.append_column(col)
       
-      rend = Gtk.CellRendererPixbuf()
-      rend.set_property('cell-background', 'white')
-      col = Gtk.TreeViewColumn("I", rend, pixbuf = 1)
-      col.set_resizable(False)
-      col.set_expand(False)
-      self.libListView.append_column(col)
-
       self.select = self.libListView.get_selection()
       self.select.connect("changed", self.on_tree_selection_changed)
       
@@ -170,11 +192,15 @@ class MediaListTracksPage(MediaListItemsPage):
       sw.add(self.libListView)
       return(sw)
 
+   def prependRow(self):
+      # I need a better/cleaner way of doing this...
+      self.libStore.prepend([self.arrowMore, "All Tracks", True, None])
+
    def appendRow(self, item_dict, data_type, DidlItem):
       if item_dict is not None:
-         self.libStore.append([self.printPatterns(data_type).format(**item_dict), self.arrowMore, True, DidlItem])
+         self.libStore.append([self.arrowMore, self.printPatterns(data_type).format(**item_dict), True, DidlItem])
       else:
-         self.libStore.append(["No Tracks Found", self.arrowMore, True, None])
+         self.libStore.append([self.arrowMore, "No Tracks Found", False, None])
 
    def __init__(self, topLevel):
       super().__init__(topLevel)

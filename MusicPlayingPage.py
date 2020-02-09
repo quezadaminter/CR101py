@@ -8,6 +8,7 @@ from threading import Lock
 from enum import Enum
 from zoneListener import ZoneListener
 from image import Image
+from scrollLabel import ScrollLabel
 import imageManager
 import requests
 import html
@@ -146,6 +147,20 @@ class MusicPlayingPage(PageBase):
          self.set_album_art(trackInfo)
       print("Music playing view")
 
+      # get uri and metadata of what's playing
+      media_info = self.selectedZone.sonos.avTransport.GetMediaInfo([('InstanceID', 0)]) #this uses SoCo to access the underlying UPNP calls which gets AV data which s different to s.get_current_track_info()
+      #uri = media_info['CurrentURI']
+      metadata = media_info['CurrentURIMetaData']
+      #
+      ## later you can play this station by:
+      #s.play_uri(uri=uri, meta=metadata)
+
+   def on_Page_Exit_View(self):
+      super().on_Page_Exit_View()
+      # Stop all timeouts
+      for label in self.scrollLabels:
+         label.stop()
+
    def on_Button_A_Clicked(self):
       if self.playModeDialog is None:
          self.playModeDialog = PlayModeDialog(self)
@@ -200,16 +215,23 @@ class MusicPlayingPage(PageBase):
          self.albumArtImage.set_from_pixbuf(imageManager.get_pixbuf('noArt'))
 
    def set_current_track_details(self, data):
-      string = GLib.markup_escape_text(data['title'])
-      self.trackNameLabel.set_markup("<b>" + string + "</b>")
+      string = ""#GLib.markup_escape_text(data['title'])
+      self.trackNameLabel.set_markup(data['title'])
       if 'creator' in data:
-         string = GLib.markup_escape_text(data['creator'])
+         string = data['creator']# GLib.markup_escape_text(data['creator'])
       elif 'artist' in data:
-         string = GLib.markup_escape_text(data['artist'])
+         string = data['artist']
+         #string = GLib.markup_escape_text(data['artist'])
 
-      self.artistsNameLabel.set_markup("<b>" + string + "</b>")
-      string = GLib.markup_escape_text(data['album'])
-      self.albumNameLabel.set_markup("<b>" + string + "</b>")
+      #self.artistsNameLabel.set_markup("<b>" + string + "</b>")
+      self.artistsNameLabel.set_markup(string)
+      
+      #string = GLib.markup_escape_text(data['album'])
+      #self.albumNameLabel.set_markup("<b>" + string + "</b>")
+      self.albumNameLabel.set_markup(data['album'])
+
+      if 'duration' in data and 'position' in data:
+         self.on_current_track_update_state(data)
 
    def on_zone_transport_change_event(self, event):
       mutex.acquire()
@@ -263,7 +285,8 @@ class MusicPlayingPage(PageBase):
                nextTrackMetaData = nextTrackMetaData.to_dict()
                nextTrackTitle = GLib.markup_escape_text(nextTrackMetaData['title'])
                nextTrackArtist = GLib.markup_escape_text(nextTrackMetaData['creator'])
-               string = "<b>{0} - {1}</b>"
+               #string = "<b>{0} - {1}</b>"
+               string = "{0} - {1}"
                self.nextTrackLabel.set_text("Next: ")
                string = string.format(nextTrackTitle, nextTrackArtist)
                self.nextTrackNameLabel.set_markup(string)
@@ -381,10 +404,14 @@ class MusicPlayingPage(PageBase):
       self.trackNumberLabel.set_alignment(0.0, 0.5)
       detailVBox.pack_start(self.trackNumberLabel, True, False, 0)
 
-      self.trackNameLabel = Gtk.Label()
-      self.trackNameLabel.set_markup("<span weight=\"bold\">Track Name Goes Here In Bold</span>")
+      mf = "<b>{0}</b>"
+      self.trackNameLabel = ScrollLabel(1)#Gtk.Label()
+      #self.trackNameLabel.set_markup("<span weight=\"bold\">Track Name Goes Here In Bold</span>")
+      self.trackNameLabel.set_markup("Track Name Goes Here In Bold")
       self.trackNameLabel.set_ellipsize(Pango.EllipsizeMode.END)
       self.trackNameLabel.set_alignment(0.0, 0.5)
+      self.trackNameLabel.assign_markup(mf)
+      self.scrollLabels.append(self.trackNameLabel)
       detailVBox.pack_start(self.trackNameLabel, True, False, 0)
 
       self.trackProgressBar = Gtk.ProgressBar()
@@ -398,10 +425,12 @@ class MusicPlayingPage(PageBase):
       artistsLabel.set_alignment(0.0, 0.5)
       detailVBox.pack_start(artistsLabel, True, False, 0)
 
-      self.artistsNameLabel = Gtk.Label()
-      self.artistsNameLabel.set_markup("<b>Artist Name Goes Here</b>")
+      self.artistsNameLabel = ScrollLabel(1)#Gtk.Label()
+      self.artistsNameLabel.set_markup("Artist Name Goes Here")
       self.artistsNameLabel.set_ellipsize(Pango.EllipsizeMode.END)
       self.artistsNameLabel.set_alignment(0.0, 0.5)
+      self.artistsNameLabel.assign_markup(mf)
+      self.scrollLabels.append(self.artistsNameLabel)
       detailVBox.pack_start(self.artistsNameLabel, True, False, 0)
 
       separatorLine = Gtk.Image()
@@ -412,10 +441,12 @@ class MusicPlayingPage(PageBase):
       albumsLabel.set_alignment(0.0, 0.5)
       detailVBox.pack_start(albumsLabel, True, False, 0)
 
-      self.albumNameLabel = Gtk.Label()
-      self.albumNameLabel.set_markup("<b>Album Name Goes Here</b>")
+      self.albumNameLabel = ScrollLabel(1)#Gtk.Label()
+      self.albumNameLabel.set_markup("Album Name Goes Here")
       self.albumNameLabel.set_ellipsize(Pango.EllipsizeMode.END)
       self.albumNameLabel.set_alignment(0.0, 0.5)
+      self.albumNameLabel.assign_markup(mf)
+      self.scrollLabels.append(self.albumNameLabel)
       detailVBox.pack_start(self.albumNameLabel, True, False, 0)
 
       detailHBox.pack_start(detailVBox, True, True, 5)
@@ -430,9 +461,12 @@ class MusicPlayingPage(PageBase):
       self.nextTrackLabel = Gtk.Label("Next: ")
       bottomHBox.pack_start(self.nextTrackLabel, False, False, 0)
 
-      self.nextTrackNameLabel = Gtk.Label()
-      self.nextTrackNameLabel.set_markup("<b>Track Name - Artist Name</b>")
+      self.nextTrackNameLabel = ScrollLabel(1)#Gtk.Label()
+      self.nextTrackNameLabel.set_markup("Track Name - Artist Name")
+      self.nextTrackNameLabel.assign_markup("<b>{0}</b>")
+      self.nextTrackNameLabel.set_max_width_chars(21)
       self.nextTrackNameLabel.set_ellipsize(Pango.EllipsizeMode.END)
+      self.scrollLabels.append(self.nextTrackNameLabel)
       bottomHBox.pack_start(self.nextTrackNameLabel, True, True, 0)
 
       queueImage = Gtk.Image()
@@ -463,6 +497,7 @@ class MusicPlayingPage(PageBase):
       return grid
 
    def __init__(self, topLevel):
+      self.scrollLabels = []
       super().__init__(topLevel)
       self.crossFadeMode = '0'
       self.playModeDialog = None
