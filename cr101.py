@@ -19,6 +19,8 @@ from threading import Thread, Event
 import time
 from mediaListTracksPage import MediaListTracksPage
 from zoneListener import ZoneListener
+from I2C import I2CListener, CRi2c
+import I2C
 import imageManager
 
 def moduleExists(module_name):
@@ -58,6 +60,54 @@ class PyApp(Gtk.Window):
       def on_current_track_update_state(self, trackInfo):
          for key, value in self.owner.zoneListeners.items():
             value.on_current_track_update_state(trackInfo)
+
+   class i2cListenerInterface(I2CListener):
+      def __init__(self, owner):
+         self.owner = owner
+
+      def on_button_pressed_event(self, btn):
+         pass
+
+      def on_button_released_event(self, btn):
+          print("BUTTON: ", btn)
+          if btn == I2C.SWITCH_MUTE:
+             self.owner.on_zoneMuteButton_Clicked(None)
+          elif btn == I2C.SWITCH_VOL_UP:
+             self.owner.on_zoneVolUpButton_Clicked(None)
+          elif btn == I2C.SWITCH_VOL_DN:
+             self.owner.on_zoneVolDownButton_Clicked(None)
+          elif btn == I2C.SWITCH_A:
+             self.owner.on_Button_A_Clicked(None)
+          elif btn == I2C.SWITCH_B:
+             self.owner.on_Button_B_Clicked(None)
+          elif btn == I2C.SWITCH_C:
+             self.owner.on_Button_C_Clicked(None)
+          elif btn == I2C.SWITCH_ZONE:
+             self.owner.on_Zones_Button_Clicked(None)
+          elif btn == I2C.SWITCH_BACK:
+             self.owner.on_Return_Button_Clicked(None)
+          elif btn == I2C.SWITCH_MUSIC:
+             self.owner.on_Music_Button_Clicked(None)
+          elif btn == I2C.SWITCH_ENTER:
+             self.owner.on_Button_Ok_Clicked(None)
+          elif btn == I2C.SWITCH_REWIND:
+             self.owner.on_Previous_Button_Clicked(None)
+          elif btn == I2C.SWITCH_PLAY_PAUSE:
+             self.owner.on_Play_Button_Clicked(None)
+          elif btn == I2C.SWITCH_FORWARD:
+             self.owner.on_Next_Button_Clicked(None)
+
+      def on_scroll_event(self, steps):
+         pass
+
+      def on_battery_level_event(self):
+         pass
+
+      def on_charger_event(self):
+         pass
+
+      def on_system_event(self):
+         pass
 
    def on_Zones_Button_Clicked(self, button):
       self.pageInView.on_zoneButton_Clicked()
@@ -211,6 +261,7 @@ class PyApp(Gtk.Window):
 
    def on_destroy(self, widget):
       self.RunEventThread = False
+      self.i2c.Close()
       time.sleep(1.0)
       Gtk.main_quit()
 
@@ -252,6 +303,9 @@ class PyApp(Gtk.Window):
          }
 
       self.zlistener = self.zoneListener(self)
+      self.i2cListener = self.i2cListenerInterface(self)
+      self.i2c = CRi2c()
+      self.i2c.setListener(self.__class__.__name__, self.i2cListener)
 
       self.pageInView = self.pageDict["ZonesPage"]
       self.pageInView.set_listener(self.zlistener)
@@ -264,9 +318,9 @@ class PyApp(Gtk.Window):
 #      self.set_resizable(False)
       self.set_title("CR101!")
 
-      if moduleExists("RPi.GPIO"):
-         # connect to the hardware IO
-         import RPi.GPIO as GPIO
+#      if moduleExists("RPi.GPIO"):
+#         # connect to the hardware IO
+#         import RPi.GPIO as GPIO
 
       topHBox = Gtk.HBox()
 
@@ -398,5 +452,9 @@ class PyApp(Gtk.Window):
 #      if self.eventThread.is_alive():
 #         self.eventThread.join()
 
-PyApp()
-Gtk.main()
+
+try:
+   app = PyApp()
+   Gtk.main()
+except KeyboardInterrupt:
+   app.i2c.Close()
