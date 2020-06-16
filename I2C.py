@@ -77,7 +77,7 @@ class I2CListener(object):
       pass
 
    @abstractmethod
-   def on_battery_level_event(self):
+   def on_battery_level_event(self, level):
       pass
 
    @abstractmethod
@@ -133,6 +133,10 @@ class CRi2c():
        elif reg == PI_BATTERY_LEVEL_REGISTER:
            print("Got BATT LEVEL register: {}, Level: {}%". format(reg, data[1]))
            self.printByte(data[1], 1)
+           PI_REGISTERS[PI_BATTERY_LEVEL_REGISTERS] = data[1]
+           if self.I2CListeners is not None and len(self.I2CListeners) > 0:
+              for key in self.I2CListeners:
+                 self.I2CListeners[key].on_battery_level_event(PI_REGISTERS[PI_BATTERY_LEVEL_REGISTER])
 
        elif reg == PI_INPUT_REGISTER_H:
            print("Got SWITCH register: {}, data: {} {}".format(reg, data[1], data[2]))
@@ -146,8 +150,10 @@ class CRi2c():
               w = (data[1] << 8) | data[2]
               print("Word value: {}".format(w))
               self.printByte(w, 2)
+              print("Current reg")
+              self.printByte(PI_REGISTERS[PI_INPUT_REGISTER_H], 2)
 
-              oldW = (PI_REGISTERS[PI_INPUT_REGISTER_H]) | PI_REGISTERS[PI_INPUT_REGISTER_L]
+              oldW = (PI_REGISTERS[PI_INPUT_REGISTER_H] << 8) | PI_REGISTERS[PI_INPUT_REGISTER_L]
               if self.I2CListeners is not None and len(self.I2CListeners) > 0:
                  change = w ^ oldW
                  if change != 0:
@@ -247,21 +253,10 @@ class CRi2c():
 
         self.pi.bsc_i2c(PI_I2C_ADDRESS) # configures the BSC as I2C slave
 
-#      except(KeyboardInterrupt):
-#          self.Close()
       except:
           self.Close()
 
       print("I2C running!")
-#      pi = pigpio.pi()
-#
-#      if not pi.connected:
-#         exit()
-#
-#      # handle slave activity
-#      e = pi.event_callback(pigpio.EVENT_BSC, i2c)
-#
-#      pi.bsc_i2c(I2C_ADDR) # configures the BSC as I2C slave
 
    def Close(self):
      print("I2C Done!")

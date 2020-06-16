@@ -2,7 +2,7 @@
 import soco
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject, GLib
 import zonesPage
 from zonesPage import ZonesPage, Zones
 from MusicPage import MusicPage
@@ -65,43 +65,56 @@ class PyApp(Gtk.Window):
       def __init__(self, owner):
          self.owner = owner
 
+      # We need this wrapper because the method
+      # must return False in order to inform
+      # the gui thread that it should be called only once.
+      def add_as_idle(self, function):
+         function(None)
+         return False
+
+      def add_as_idle(self, function, arg1):
+         #print("ADD_AS_IDLE: ", id(function))
+         function(arg1)
+         return False
+
       def on_button_pressed_event(self, btn):
          pass
 
       def on_button_released_event(self, btn):
           print("BUTTON: ", btn)
+          print("release event: ", btn)
           if btn == I2C.SWITCH_MUTE:
-             self.owner.on_zoneMuteButton_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_zoneMuteButton_Clicked)
           elif btn == I2C.SWITCH_VOL_UP:
-             self.owner.on_zoneVolUpButton_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_zoneVolUpButton_Clicked)
           elif btn == I2C.SWITCH_VOL_DN:
-             self.owner.on_zoneVolDownButton_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_zoneVolDownButton_Clicked)
           elif btn == I2C.SWITCH_A:
-             self.owner.on_Button_A_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_Button_A_Clicked)
           elif btn == I2C.SWITCH_B:
-             self.owner.on_Button_B_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_Button_B_Clicked)
           elif btn == I2C.SWITCH_C:
-             self.owner.on_Button_C_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_Button_C_Clicked)
           elif btn == I2C.SWITCH_ZONE:
-             self.owner.on_Zones_Button_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_Zones_Button_Clicked)
           elif btn == I2C.SWITCH_BACK:
-             self.owner.on_Return_Button_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_Return_Button_Clicked)
           elif btn == I2C.SWITCH_MUSIC:
-             self.owner.on_Music_Button_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_Music_Button_Clicked)
           elif btn == I2C.SWITCH_ENTER:
-             self.owner.on_Button_Ok_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_Button_Ok_Clicked)
           elif btn == I2C.SWITCH_REWIND:
-             self.owner.on_Previous_Button_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_Previous_Button_Clicked)
           elif btn == I2C.SWITCH_PLAY_PAUSE:
-             self.owner.on_Play_Button_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_Play_Button_Clicked)
           elif btn == I2C.SWITCH_FORWARD:
-             self.owner.on_Next_Button_Clicked(None)
+             GLib.idle_add(self.add_as_idle, self.owner.on_Next_Button_Clicked)
 
       def on_scroll_event(self, steps):
          pass
 
-      def on_battery_level_event(self):
-         pass
+      def on_battery_level_event(self, level):
+         GLib.idle_add(self.add_as_idle, self.owner.on_Battery_Level_Event, level)
 
       def on_charger_event(self):
          pass
