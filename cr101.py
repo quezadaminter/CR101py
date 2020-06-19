@@ -68,13 +68,12 @@ class PyApp(Gtk.Window):
       # We need this wrapper because the method
       # must return False in order to inform
       # the gui thread that it should be called only once.
-      def add_as_idle(self, function):
-         function(None)
-         return False
-
-      def add_as_idle(self, function, arg1):
+      #def add_as_idle(self, function):
+      #   function(None)
+      #   return False
+      def add_as_idle(self, function, *args):
          #print("ADD_AS_IDLE: ", id(function))
-         function(arg1)
+         function(args)
          return False
 
       def on_button_pressed_event(self, btn):
@@ -122,11 +121,39 @@ class PyApp(Gtk.Window):
       def on_system_event(self):
          pass
 
+   def on_Zones_Button_Press(self, button, event):
+       print("Zones press ", event)
+       self.i2c.sendEvent(I2C.SWITCH_ZONE, True)
+       return True
+
+   def on_Zones_Button_Release(self, button, event):
+       print("Zones Release", event)
+       self.i2c.sendEvent(I2C.SWITCH_ZONE, False)
+       return True
+
    def on_Zones_Button_Clicked(self, button):
       self.pageInView.on_zoneButton_Clicked()
+      return True
+
+   def on_Music_Button_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_MUSIC, True)
+      return True
+
+   def on_Music_Button_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_MUSIC, False)
+      return True
 
    def on_Music_Button_Clicked(self, button):
       self.pageInView.on_musicButton_Clicked()
+      return True
+
+   def on_zoneMuteButton_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_MUTE, True)
+      return True
+
+   def on_zoneMuteButton_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_MUTE, False)
+      return True
 
    def on_zoneMuteButton_Clicked(self, button):
       print("Mute")
@@ -134,17 +161,35 @@ class PyApp(Gtk.Window):
       if zp is not None and zp.selectedZone is not None:
          zp.selectedZone.mute(not zp.selectedZone.is_muted())
 
+   def on_zoneVolUpButton_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_VOL_UP, True)
+      return True
+
+   def on_zoneVolUpButton_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_VOL_UP, False)
+      return True
+
    def on_zoneVolUpButton_Clicked(self, button):
       print("Up")
       zp = self.pageDict["ZonesPage"]
       if zp is not None and zp.selectedZone is not None:
          zp.selectedZone.volume('+')
+      return True
+
+   def on_zoneVolDownButton_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_VOL_DN, True)
+      return True
+
+   def on_zoneVolDownButton_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_VOL_DN, False)
+      return True
 
    def on_zoneVolDownButton_Clicked(self, button):
       print("Down")
       zp = self.pageDict["ZonesPage"]
       if zp is not None and zp.selectedZone is not None:
          zp.selectedZone.volume('-')
+      return True
 
    def get_selected_zone(self):
       zp = self.pageDict["ZonesPage"]
@@ -194,26 +239,78 @@ class PyApp(Gtk.Window):
 #       self.show_page(self.stack.get_visible_child())
       pass
 
+   def on_Button_A_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_A, True)
+      return True
+
+   def on_Button_A_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_A, False)
+      return True
+
    def on_Button_A_Clicked(self, button):
        self.pageInView.on_Button_A_Clicked()
+       return True
+
+   def on_Button_B_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_B, True)
+      return True
+
+   def on_Button_B_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_B, False)
+      return True
 
    def on_Button_B_Clicked(self, button):
        self.pageInView.on_Button_B_Clicked()
+       return True
+
+   def on_Button_C_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_C, True)
+      return True
+
+   def on_Button_C_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_C, False)
+      return True
 
    def on_Button_C_Clicked(self, button):
       self.pageInView.on_Button_C_Clicked()
 
+   def on_Return_Button_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_BACK, True)
+      return True
+
+   def on_Return_Button_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_BACK, False)
+      return True
+
    def on_Return_Button_Clicked(self, button):
       self.pageInView.on_Return_Button_Clicked()
+      return True
 
    def on_Scroll_Up(self, button):
        self.pageInView.on_Scroll_Up()
 
+   def on_Button_Ok_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_ENTER, True)
+      return True
+
+   def on_Button_Ok_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_ENTER, False)
+      return True
+
    def on_Button_Ok_Clicked(self, button):
        self.pageInView.on_Button_Ok_Clicked()
+       return True
 
    def on_Scroll_Down(self, button):
        self.pageInView.on_Scroll_Down()
+
+   def on_Previous_Button_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_REWIND, True)
+      return True
+
+   def on_Previous_Button_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_REWIND, False)
+      return True
 
    def on_Previous_Button_Clicked(self, button):
       zp = self.pageDict["ZonesPage"]
@@ -221,6 +318,15 @@ class PyApp(Gtk.Window):
          zp.selectedZone.previous()
       else :
          print(zp.selectedZone)
+      return True
+
+   def on_Play_Button_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_PLAY_PAUSE, True)
+      return True
+
+   def on_Play_Button_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_PLAY_PAUSE, False)
+      return True
 
    def on_Play_Button_Clicked(self, button):
       zp = self.pageDict["ZonesPage"]
@@ -228,6 +334,15 @@ class PyApp(Gtk.Window):
          zp.selectedZone.play()
       else :
          print(zp.selectedZone)
+      return True
+
+   def on_Next_Button_Press(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_FORWARD, True)
+      return True
+
+   def on_Next_Button_Release(self, button, event):
+      self.i2c.sendEvent(I2C.SWITCH_FORWARD, False)
+      return True
 
    def on_Next_Button_Clicked(self, button):
       zp = self.pageDict["ZonesPage"]
@@ -235,6 +350,7 @@ class PyApp(Gtk.Window):
          zp.selectedZone.next()
       else :
          print(zp.selectedZone)
+      return True
 
    def eventThreadHandler(self):
       print("Running event thread handler: ", zonesPage.Zones)
@@ -339,16 +455,22 @@ class PyApp(Gtk.Window):
 
       vBbox = Gtk.VButtonBox()
       b = Gtk.Button("MUTE")
-      b.connect("clicked", self.on_zoneMuteButton_Clicked)
+      #b.connect("clicked", self.on_zoneMuteButton_Clicked)
+      b.connect("button-press-event", self.on_zoneMuteButton_Press)
+      b.connect("button-release-event", self.on_zoneMuteButton_Release)
       vBbox.pack_start(b, False, False, 1)
       b = Gtk.Button("VOL")
       b.set_sensitive(False)
       vBbox.pack_start(b, False, False, 1)
       b = Gtk.Button("UP")
-      b.connect("clicked", self.on_zoneVolUpButton_Clicked)
+      #b.connect("clicked", self.on_zoneVolUpButton_Clicked)
+      b.connect("button-press-event", self.on_zoneVolUpButton_Press)
+      b.connect("button-release-event", self.on_zoneVolUpButton_Release)
       vBbox.pack_start(b, False, False, 1)
       b = Gtk.Button("DN")
-      b.connect("clicked", self.on_zoneVolDownButton_Clicked)
+      #b.connect("clicked", self.on_zoneVolDownButton_Clicked)
+      b.connect("button-press-event", self.on_zoneVolDownButton_Press)
+      b.connect("button-release-event", self.on_zoneVolDownButton_Release)
       vBbox.pack_start(b, False, False, 1)
 
       topHBox.pack_start(vBbox, False, False, 1)
@@ -385,15 +507,21 @@ class PyApp(Gtk.Window):
       buttonBox = Gtk.HButtonBox()
 #      buttonBox.set_layout(Gtk.BUTTONBOX_START)
       b = Gtk.Button("A")
-      b.connect("clicked", self.on_Button_A_Clicked)
+      #b.connect("clicked", self.on_Button_A_Clicked)
+      b.connect("button-press-event", self.on_Button_A_Press)
+      b.connect("button-release-event", self.on_Button_A_Release)
       buttonBox.pack_start(b, True, False, 1)
 
       b = Gtk.Button("B")
-      b.connect("clicked", self.on_Button_B_Clicked)
+      #b.connect("clicked", self.on_Button_B_Clicked)
+      b.connect("button-press-event", self.on_Button_B_Press)
+      b.connect("button-release-event", self.on_Button_B_Release)
       buttonBox.pack_start(b, True, False, 1)
 
       b = Gtk.Button("C")
-      b.connect("clicked", self.on_Button_C_Clicked)
+      #b.connect("clicked", self.on_Button_C_Clicked)
+      b.connect("button-press-event", self.on_Button_C_Press)
+      b.connect("button-release-event", self.on_Button_C_Release)
       buttonBox.pack_start(b, True, False, 1)
 
       self.vbox.pack_start(buttonBox, False, False, 0)
@@ -407,15 +535,21 @@ class PyApp(Gtk.Window):
 #      vBox.pack_start(stack_switcher, False, False, 1)
       
       b = Gtk.Button("Zones")
-      b.connect("clicked", self.on_Zones_Button_Clicked)
+      #b.connect("clicked", self.on_Zones_Button_Clicked)
+      b.connect("button-press-event", self.on_Zones_Button_Press)
+      b.connect("button-release-event", self.on_Zones_Button_Release)
       buttonBox.pack_start(b, True, False, 1)
       
       b = Gtk.Button("Ret")
-      b.connect("clicked", self.on_Return_Button_Clicked)
+      #b.connect("clicked", self.on_Return_Button_Clicked)
+      b.connect("button-press-event", self.on_Return_Button_Press)
+      b.connect("button-release-event", self.on_Return_Button_Release)
       buttonBox.pack_start(b, True, False, 1)
 #      vBox.pack_start(b, False, False, 1)
       b = Gtk.Button("Music")
-      b.connect("clicked", self.on_Music_Button_Clicked)
+      #b.connect("clicked", self.on_Music_Button_Clicked)
+      b.connect("button-press-event", self.on_Music_Button_Press)
+      b.connect("button-release-event", self.on_Music_Button_Release)
       buttonBox.pack_start(b, True, False, 1)
       
       vBox.pack_start(buttonBox, False, False, 1)
@@ -426,7 +560,9 @@ class PyApp(Gtk.Window):
       b.connect("clicked", self.on_Scroll_Up)
       buttonBox.pack_start(b, True, False, 1)
       b = Gtk.Button("OK")
-      b.connect("clicked", self.on_Button_Ok_Clicked)
+      #b.connect("clicked", self.on_Button_Ok_Clicked)
+      b.connect("button-press-event", self.on_Button_Ok_Press)
+      b.connect("button-release-event", self.on_Button_Ok_Release)
       buttonBox.pack_start(b, True, False, 1)
       b = Gtk.Button("F")
       b.connect("clicked", self.on_Scroll_Down)
@@ -437,13 +573,19 @@ class PyApp(Gtk.Window):
       buttonBox = Gtk.HButtonBox()
 #      buttonBox.set_layout(Gtk.BUTTONBOX_START)
       b = Gtk.Button("Prev")
-      b.connect("clicked", self.on_Previous_Button_Clicked)
+      #b.connect("clicked", self.on_Previous_Button_Clicked)
+      b.connect("button-press-event", self.on_Previous_Button_Press)
+      b.connect("button-release-event", self.on_Previous_Button_Release)
       buttonBox.pack_start(b, True, False, 1)
       b = Gtk.Button(stock = Gtk.STOCK_MEDIA_PLAY)
-      b.connect("clicked", self.on_Play_Button_Clicked)
+      #b.connect("clicked", self.on_Play_Button_Clicked)
+      b.connect("button-press-event", self.on_Play_Button_Press)
+      b.connect("button-release-event", self.on_Play_Button_Release)
       buttonBox.pack_start(b, True, False, 1)
       b = Gtk.Button("Next")
-      b.connect("clicked", self.on_Next_Button_Clicked)
+      #b.connect("clicked", self.on_Next_Button_Clicked)
+      b.connect("button-press-event", self.on_Next_Button_Press)
+      b.connect("button-release-event", self.on_Next_Button_Release)
       buttonBox.pack_start(b, True, False, 1)
 
       vBox.pack_start(buttonBox, True, False, 1)
