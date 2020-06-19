@@ -49,11 +49,12 @@ PI_EVENT_CHARGING_BIT_B = (1 << 4)
 PI_BATTERY_LEVEL_REGISTER = 0x02
 PI_INPUT_REGISTER_H = 0x03
 PI_INPUT_REGISTER_L = 0x04
-PI_DEBUG_BYTE_REGISTER = 0x05
-PI_DEBUG_WORD_REGISTER_H = 0x06
-PI_DEBUG_WORD_REGISTER_L = 0x07
-PI_FREE_TEXT_REGISTER = 0x08
-PI_END_REGISTER = 0x09
+PI_SCROLL_CLICKS_REGISTER = 0x05
+PI_DEBUG_BYTE_REGISTER = 0x06
+PI_DEBUG_WORD_REGISTER_H = 0x07
+PI_DEBUG_WORD_REGISTER_L = 0x08
+PI_FREE_TEXT_REGISTER = 0x09
+PI_END_REGISTER = 0x0A
 
 PI_REGISTERS = [0] * PI_END_REGISTER
 
@@ -146,7 +147,7 @@ class CRi2c():
            elif reg == PI_BATTERY_LEVEL_REGISTER:
                print("Got BATT LEVEL register: {}, Level: {}%". format(reg, data[1]))
                self.printByte(data[1], 1)
-               PI_REGISTERS[PI_BATTERY_LEVEL_REGISTERS] = data[1]
+               PI_REGISTERS[PI_BATTERY_LEVEL_REGISTER] = data[1]
                if self.I2CListeners is not None and len(self.I2CListeners) > 0:
                   for key in self.I2CListeners:
                      self.I2CListeners[key].on_battery_level_event(PI_REGISTERS[PI_BATTERY_LEVEL_REGISTER])
@@ -179,6 +180,7 @@ class CRi2c():
                                    if i == SWITCH_SCROLL_EVENT:
                                        self.I2CListeners[key].on_scroll_event(w >> SWITCH_SCROLL_EVENT) # NEEDS DIRECTION!!
                                        pass
+
                                    else:
                                        if w & (1 << i):
                                           self.I2CListeners[key].on_button_pressed_event(i)
@@ -235,7 +237,7 @@ class CRi2c():
 
        s, b, d = self.pi.bsc_i2c(PI_I2C_ADDRESS)
        if b:
-           print("-----------------Got {} bytes! Status {}--------------".format(b, s))
+           print("-----------------Got {} bytes! Status {} d[0] {}--------------".format(b, s, d[0]))
            j = 0
            rem = b
            while j < b:

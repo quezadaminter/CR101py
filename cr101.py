@@ -1,8 +1,9 @@
 #!/bin/python3
+import sys
 import soco
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GObject, GLib
+from gi.repository import Gtk, GObject, GLib, Gdk
 import zonesPage
 from zonesPage import ZonesPage, Zones
 from MusicPage import MusicPage
@@ -113,7 +114,8 @@ class PyApp(Gtk.Window):
          pass
 
       def on_battery_level_event(self, level):
-         GLib.idle_add(self.add_as_idle, self.owner.on_Battery_Level_Event, level)
+         #GLib.idle_add(self.add_as_idle, self.owner.on_Battery_Level_Event, level)
+         pass
 
       def on_charger_event(self):
          pass
@@ -398,7 +400,7 @@ class PyApp(Gtk.Window):
 ###############################################################################
 ###############################################################################
 
-   def __init__(self):
+   def __init__(self, hideUI):
       super(PyApp, self).__init__()
 
       self.zoneListeners = {}
@@ -442,8 +444,10 @@ class PyApp(Gtk.Window):
       self.RunEventThread = True
       self.eventThread = Thread(target = self.eventThreadHandler)
 
-#      self.set_default_size(480, 320)
-      self.set_default_size(620, 320)
+      self.set_default_size(480, 320)
+
+      #self.set_default_size(620, 320)
+
 #      self.set_resizable(False)
       self.set_title("CR101!")
 
@@ -453,27 +457,27 @@ class PyApp(Gtk.Window):
 
       topHBox = Gtk.HBox()
 
-      vBbox = Gtk.VButtonBox()
-      b = Gtk.Button("MUTE")
+      vBoxVol = Gtk.VButtonBox()
+      b = Gtk.Button(label="MUTE")
       #b.connect("clicked", self.on_zoneMuteButton_Clicked)
       b.connect("button-press-event", self.on_zoneMuteButton_Press)
       b.connect("button-release-event", self.on_zoneMuteButton_Release)
-      vBbox.pack_start(b, False, False, 1)
-      b = Gtk.Button("VOL")
+      vBoxVol.pack_start(b, False, False, 1)
+      b = Gtk.Button(label="VOL")
       b.set_sensitive(False)
-      vBbox.pack_start(b, False, False, 1)
-      b = Gtk.Button("UP")
+      vBoxVol.pack_start(b, False, False, 1)
+      b = Gtk.Button(label="UP")
       #b.connect("clicked", self.on_zoneVolUpButton_Clicked)
       b.connect("button-press-event", self.on_zoneVolUpButton_Press)
       b.connect("button-release-event", self.on_zoneVolUpButton_Release)
-      vBbox.pack_start(b, False, False, 1)
-      b = Gtk.Button("DN")
+      vBoxVol.pack_start(b, False, False, 1)
+      b = Gtk.Button(label="DN")
       #b.connect("clicked", self.on_zoneVolDownButton_Clicked)
       b.connect("button-press-event", self.on_zoneVolDownButton_Press)
       b.connect("button-release-event", self.on_zoneVolDownButton_Release)
-      vBbox.pack_start(b, False, False, 1)
+      vBoxVol.pack_start(b, False, False, 1)
 
-      topHBox.pack_start(vBbox, False, False, 1)
+      topHBox.pack_start(vBoxVol, False, False, 1)
 
       self.vbox = Gtk.VBox()
 #      self.stack = Gtk.Stack()
@@ -504,75 +508,75 @@ class PyApp(Gtk.Window):
       self.queueRevealer.set_reveal_child(False)
       self.vbox.pack_start(self.queueRevealer, True, True, 0)
 
-      buttonBox = Gtk.HButtonBox()
-#      buttonBox.set_layout(Gtk.BUTTONBOX_START)
-      b = Gtk.Button("A")
+      buttonBoxABC = Gtk.HButtonBox()
+#      buttonBoxABC.set_layout(Gtk.BUTTONBOX_START)
+      b = Gtk.Button(label="A")
       #b.connect("clicked", self.on_Button_A_Clicked)
       b.connect("button-press-event", self.on_Button_A_Press)
       b.connect("button-release-event", self.on_Button_A_Release)
-      buttonBox.pack_start(b, True, False, 1)
+      buttonBoxABC.pack_start(b, True, False, 1)
 
-      b = Gtk.Button("B")
+      b = Gtk.Button(label="B")
       #b.connect("clicked", self.on_Button_B_Clicked)
       b.connect("button-press-event", self.on_Button_B_Press)
       b.connect("button-release-event", self.on_Button_B_Release)
-      buttonBox.pack_start(b, True, False, 1)
+      buttonBoxABC.pack_start(b, True, False, 1)
 
-      b = Gtk.Button("C")
+      b = Gtk.Button(label="C")
       #b.connect("clicked", self.on_Button_C_Clicked)
       b.connect("button-press-event", self.on_Button_C_Press)
       b.connect("button-release-event", self.on_Button_C_Release)
-      buttonBox.pack_start(b, True, False, 1)
+      buttonBoxABC.pack_start(b, True, False, 1)
 
-      self.vbox.pack_start(buttonBox, False, False, 0)
+      self.vbox.pack_start(buttonBoxABC, False, False, 0)
 
-      topHBox.pack_start(self.vbox, True, False, 1)
+      topHBox.pack_start(self.vbox, False, False, 1)
 
 
-      vBox = Gtk.VBox()
+      cmdVBox = Gtk.VBox()
 #
       buttonBox = Gtk.HButtonBox()
-#      vBox.pack_start(stack_switcher, False, False, 1)
+#      cmdVBox.pack_start(stack_switcher, False, False, 1)
       
-      b = Gtk.Button("Zones")
+      b = Gtk.Button(label="Zones")
       #b.connect("clicked", self.on_Zones_Button_Clicked)
       b.connect("button-press-event", self.on_Zones_Button_Press)
       b.connect("button-release-event", self.on_Zones_Button_Release)
       buttonBox.pack_start(b, True, False, 1)
       
-      b = Gtk.Button("Ret")
+      b = Gtk.Button(label="Ret")
       #b.connect("clicked", self.on_Return_Button_Clicked)
       b.connect("button-press-event", self.on_Return_Button_Press)
       b.connect("button-release-event", self.on_Return_Button_Release)
       buttonBox.pack_start(b, True, False, 1)
-#      vBox.pack_start(b, False, False, 1)
-      b = Gtk.Button("Music")
+#      cmdVBox.pack_start(b, False, False, 1)
+      b = Gtk.Button(label="Music")
       #b.connect("clicked", self.on_Music_Button_Clicked)
       b.connect("button-press-event", self.on_Music_Button_Press)
       b.connect("button-release-event", self.on_Music_Button_Release)
       buttonBox.pack_start(b, True, False, 1)
       
-      vBox.pack_start(buttonBox, False, False, 1)
+      cmdVBox.pack_start(buttonBox, False, False, 1)
 
       buttonBox = Gtk.HButtonBox()
 #      buttonBox.set_layout(Gtk.BUTTONBOX_START)
-      b = Gtk.Button("B")
+      b = Gtk.Button(label="B")
       b.connect("clicked", self.on_Scroll_Up)
       buttonBox.pack_start(b, True, False, 1)
-      b = Gtk.Button("OK")
+      b = Gtk.Button(label="OK")
       #b.connect("clicked", self.on_Button_Ok_Clicked)
       b.connect("button-press-event", self.on_Button_Ok_Press)
       b.connect("button-release-event", self.on_Button_Ok_Release)
       buttonBox.pack_start(b, True, False, 1)
-      b = Gtk.Button("F")
+      b = Gtk.Button(label="F")
       b.connect("clicked", self.on_Scroll_Down)
       buttonBox.pack_start(b, True, False, 1)
 
-      vBox.pack_start(buttonBox, True, False, 1)
+      cmdVBox.pack_start(buttonBox, True, False, 1)
 
       buttonBox = Gtk.HButtonBox()
 #      buttonBox.set_layout(Gtk.BUTTONBOX_START)
-      b = Gtk.Button("Prev")
+      b = Gtk.Button(label="Prev")
       #b.connect("clicked", self.on_Previous_Button_Clicked)
       b.connect("button-press-event", self.on_Previous_Button_Press)
       b.connect("button-release-event", self.on_Previous_Button_Release)
@@ -582,15 +586,15 @@ class PyApp(Gtk.Window):
       b.connect("button-press-event", self.on_Play_Button_Press)
       b.connect("button-release-event", self.on_Play_Button_Release)
       buttonBox.pack_start(b, True, False, 1)
-      b = Gtk.Button("Next")
+      b = Gtk.Button(label="Next")
       #b.connect("clicked", self.on_Next_Button_Clicked)
       b.connect("button-press-event", self.on_Next_Button_Press)
       b.connect("button-release-event", self.on_Next_Button_Release)
       buttonBox.pack_start(b, True, False, 1)
 
-      vBox.pack_start(buttonBox, True, False, 1)
+      cmdVBox.pack_start(buttonBox, False, False, 1)
 
-      topHBox.pack_start(vBox, False, False, 1)
+      topHBox.pack_start(cmdVBox, False, False, 1)
 
       self.add(topHBox)
 
@@ -602,6 +606,12 @@ class PyApp(Gtk.Window):
       
       self.pageInView.on_Page_Entered_View(None)
 
+      if hideUI == True:
+         cmdVBox.hide()
+         buttonBoxABC.hide()
+         vBoxVol.hide()
+         self.get_window().set_decorations(Gdk.WMDecoration.BORDER)
+
    def __del__(self):
       self.RunEventThread = False
 #      if self.eventThread.is_alive():
@@ -609,7 +619,14 @@ class PyApp(Gtk.Window):
 
 
 try:
-   app = PyApp()
+   print("Argv: ", len(sys.argv))
+
+   hideUI = False
+
+   for a in sys.argv:
+      if a == "-hui":
+          hideUI = True
+   app = PyApp(hideUI)
    Gtk.main()
 except KeyboardInterrupt:
    app.i2c.Close()
