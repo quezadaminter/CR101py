@@ -174,20 +174,23 @@ class ZonesPage(PageBase):
       return Gtk.Label("Status goes here.")
 
    def footer(self):
-      #hbox = Gtk.HBox()
+
       grid = Gtk.Grid()
       l = Gtk.Label("Link Zone")
+      l.set_hexpand(True)
       l.set_size_request(100, -1)
       grid.add(l)
-#      hbox.pack_start(l, True, False, 0)
+
       l = Gtk.Label("Drop Zone")
+      l.set_hexpand(True)
       l.set_size_request(100, -1)
       grid.attach(l, 1, 0, 1, 1)
-#      hbox.pack_start(l, True, False, 0)
+
       l = Gtk.Label("Pause All")
+      l.set_hexpand(True)
       l.set_size_request(100, -1)
       grid.attach(l, 2, 0, 1, 1)
-#      hbox.pack_start(l, True, False, 0)
+
       return grid
 
    def set_listener(self, listener):

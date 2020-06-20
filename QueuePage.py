@@ -312,14 +312,17 @@ class QueuePage(PageBase):
    def footer(self):
       grid = Gtk.Grid()
       l = Gtk.Label("Edit Queue")
+      l.set_hexpand(True)
       l.set_size_request(100, -1)
       grid.add(l)
 
       self.bButtonLabel = Gtk.Label("Clear Queue")
+      self.bButtonLabel.set_hexpand(True)
       self.bButtonLabel.set_size_request(100, -1)
       grid.attach(self.bButtonLabel, 1, 0, 1, 1)
 
       l = Gtk.Label("Close Queue")
+      l.set_hexpand(True)
       l.set_size_request(100, -1)
       grid.attach(l, 2, 0, 1, 1)
 

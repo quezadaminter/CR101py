@@ -76,14 +76,17 @@ class MediaListItemsPage(PageBase):
 
       grid = Gtk.Grid()
       l = Gtk.Label(" ")
+      l.set_hexpand(True)
       l.set_size_request(100, -1)
       grid.add(l)
 
       l = Gtk.Label("Add to Queue")
+      l.set_hexpand(True)
       l.set_size_request(100, -1)
       grid.attach(l, 1, 0, 1, 1)
 
       l = Gtk.Label("View Queue")
+      l.set_hexpand(True)
       l.set_size_request(100, -1)
       grid.attach(l, 2, 0, 1, 1)
 

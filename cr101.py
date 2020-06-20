@@ -400,7 +400,7 @@ class PyApp(Gtk.Window):
 ###############################################################################
 ###############################################################################
 
-   def __init__(self, hideUI):
+   def __init__(self, hideUI, hideDecorations):
       super(PyApp, self).__init__()
 
       self.zoneListeners = {}
@@ -444,7 +444,7 @@ class PyApp(Gtk.Window):
       self.RunEventThread = True
       self.eventThread = Thread(target = self.eventThreadHandler)
 
-      self.set_default_size(480, 320)
+      #self.set_default_size(480, 320)
 
       #self.set_default_size(620, 320)
 
@@ -509,28 +509,28 @@ class PyApp(Gtk.Window):
       self.vbox.pack_start(self.queueRevealer, True, True, 0)
 
       buttonBoxABC = Gtk.HButtonBox()
-#      buttonBoxABC.set_layout(Gtk.BUTTONBOX_START)
+      buttonBoxABC.set_layout(Gtk.ButtonBoxStyle.SPREAD)
       b = Gtk.Button(label="A")
       #b.connect("clicked", self.on_Button_A_Clicked)
       b.connect("button-press-event", self.on_Button_A_Press)
       b.connect("button-release-event", self.on_Button_A_Release)
-      buttonBoxABC.pack_start(b, True, False, 1)
+      buttonBoxABC.pack_start(b, True, True, 1)
 
       b = Gtk.Button(label="B")
       #b.connect("clicked", self.on_Button_B_Clicked)
       b.connect("button-press-event", self.on_Button_B_Press)
       b.connect("button-release-event", self.on_Button_B_Release)
-      buttonBoxABC.pack_start(b, True, False, 1)
+      buttonBoxABC.pack_start(b, True, True, 1)
 
       b = Gtk.Button(label="C")
       #b.connect("clicked", self.on_Button_C_Clicked)
       b.connect("button-press-event", self.on_Button_C_Press)
       b.connect("button-release-event", self.on_Button_C_Release)
-      buttonBoxABC.pack_start(b, True, False, 1)
+      buttonBoxABC.pack_start(b, True, True, 1)
 
       self.vbox.pack_start(buttonBoxABC, False, False, 0)
 
-      topHBox.pack_start(self.vbox, False, False, 1)
+      topHBox.pack_start(self.vbox, True, True, 1)
 
 
       cmdVBox = Gtk.VBox()
@@ -610,6 +610,8 @@ class PyApp(Gtk.Window):
          cmdVBox.hide()
          buttonBoxABC.hide()
          vBoxVol.hide()
+
+      if hideDecorations == True:
          self.get_window().set_decorations(Gdk.WMDecoration.BORDER)
 
    def __del__(self):
@@ -622,11 +624,15 @@ try:
    print("Argv: ", len(sys.argv))
 
    hideUI = False
+   hideDecorations = False
 
    for a in sys.argv:
       if a == "-hui":
-          hideUI = True
-   app = PyApp(hideUI)
+         hideUI = True
+      elif a == "-hdec":
+         hideDecorations = True
+
+   app = PyApp(hideUI, hideDecorations)
    Gtk.main()
 except KeyboardInterrupt:
    app.i2c.Close()

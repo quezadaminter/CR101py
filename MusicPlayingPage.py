@@ -486,12 +486,15 @@ class MusicPlayingPage(PageBase):
    def footer(self):
       grid = Gtk.Grid()
       l = Gtk.Label("Play Mode")
+      l.set_hexpand(True)
       l.set_size_request(100, -1)
       grid.add(l)
       l = Gtk.Label(" ")
+      l.set_hexpand(True)
       l.set_size_request(100, -1)
       grid.attach(l, 1, 0, 1, 1)
       l = Gtk.Label("View Queue")
+      l.set_hexpand(True)
       l.set_size_request(100, -1)
       grid.attach(l, 2, 0, 1, 1)
       return grid
