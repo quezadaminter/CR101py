@@ -23,6 +23,7 @@ from zoneListener import ZoneListener
 from I2C import I2CListener, CRi2c
 import I2C
 import imageManager
+import CSS
 
 def moduleExists(module_name):
    try:
@@ -632,6 +633,7 @@ try:
       elif a == "-hdec":
          hideDecorations = True
 
+   CSS.mainStyle()
    app = PyApp(hideUI, hideDecorations)
    Gtk.main()
 except KeyboardInterrupt:
