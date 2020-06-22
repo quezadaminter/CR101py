@@ -615,6 +615,8 @@ class PyApp(Gtk.Window):
       if hideDecorations == True:
          self.get_window().set_decorations(Gdk.WMDecoration.BORDER)
 
+      self.get_window().fullscreen()
+
    def __del__(self):
       self.RunEventThread = False
 #      if self.eventThread.is_alive():
