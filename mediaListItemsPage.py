@@ -56,6 +56,7 @@ class MediaListItemsPage(PageBase):
        model, treeiter = selection.get_selected()
        if treeiter is not None:
           print("Selected: ", model.get_value(treeiter, 0))
+          #self.libListView.scroll_to_cell(model.get_path(treeiter), column=None, use_align=False, row_align=0.0, col_align=0.0)
 
    def on_zone_transport_change_event(self, event):
       pass

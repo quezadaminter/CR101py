@@ -40,7 +40,8 @@ class MusicPage(PageBase):
 
    def on_tree_selection_changed(self, selection):
        model, treeiter = selection.get_selected()
-#       if treeiter is not None and Zones is not None:
+       if treeiter is not None and Zones is not None:
+          self.zoneListView.scroll_to_cell(model.get_path(treeiter), column=None, use_align=False, row_align=0.0, col_align=0.0)
 #          print("Selected: ", model.get_value(treeiter, 1))
 
    def title(self):

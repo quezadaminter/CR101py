@@ -17,6 +17,7 @@ class EditQueueDialog(Gtk.Dialog):
    def on_tree_selection_changed(self, selection):
        model, treeiter = selection.get_selected()
        if treeiter is not None:
+         self.listView.scroll_to_cell(model.get_path(treeiter), column=None, use_align=False, row_align=0.0, col_align=0.0)
          print("Selected: ", model.get_value(treeiter, 0))
 
          option = model.get_value(treeiter, 1)
@@ -266,7 +267,9 @@ class QueuePage(PageBase):
       pass
 
    def on_tree_selection_changed(self, selection):
-      pass
+      model, treeiter = selection.get_selected()
+      if treeiter is not None:
+         self.zoneListView.scroll_to_cell(model.get_path(treeiter), column=None, use_align=False, row_align=0.0, col_align=0.0)
 #       model, treeiter = selection.get_selected()
 #       if treeiter is not None and Zones is not None:
 #          print("Selected: ", model.get_value(treeiter, 1))
