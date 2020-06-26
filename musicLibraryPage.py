@@ -6,6 +6,7 @@ from PageBase import PageBase
 from Zone import Zone
 from socos.music_lib import MusicLibrary
 from mediaListItemsPage import MediaListItemsPage
+import imageManager
 
 class Dialog(Gtk.Dialog):
    def __init__(self, parent):
@@ -89,7 +90,7 @@ class MusicLibraryPage(PageBase):
       return(self.titleLabel)
 
    def scrolledWindow(self):
-      self.arrowMore = Gtk.IconTheme.get_default().load_icon("image-loading", 16, 0)
+      self.arrowMore = imageManager.get_image('more').Scale(16, 16)
       self.libStore = Gtk.ListStore(str, GdkPixbuf.Pixbuf, str, bool, object)
       self.libListView = Gtk.TreeView(self.libStore)
       self.libListView.set_headers_visible(False)
@@ -101,10 +102,11 @@ class MusicLibraryPage(PageBase):
       self.libListView.append_column(col)
       
       rend = Gtk.CellRendererPixbuf()
-      rend.set_property('cell-background', 'white')
+      #rend.set_property('cell-background', 'white')
       col = Gtk.TreeViewColumn("I", rend, pixbuf = 1)
       col.set_resizable(False)
       col.set_expand(False)
+      col.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
       self.libListView.append_column(col)
 
       # Possible browsing items
@@ -125,8 +127,7 @@ class MusicLibraryPage(PageBase):
          self.select.select_iter(self.selected_row_iter)
 
       sw = Gtk.ScrolledWindow()
-      #sw.set_policy(1, 1)
-      sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
+      sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
       #sw.set_min_content_height(250)
       sw.add(self.libListView)
       return(sw)

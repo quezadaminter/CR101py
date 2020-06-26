@@ -166,8 +166,7 @@ class ZonesPage(PageBase):
          self.select.select_iter(self.selected_row_iter)
 
       sw = Gtk.ScrolledWindow()
-      sw.set_policy(1, 1)
-#      Gtk.POLICY_AUTOMATIC, Gtk.POLICY_AUTOMATIC)
+      sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
       sw.add(self.zoneListView)
       return(sw)
 

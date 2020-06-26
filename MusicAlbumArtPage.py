@@ -106,13 +106,14 @@ class MusicAlbumArtPage(PageBase):
                if self.topLevel.get_selected_zone() is not None:
                   self.set_album_art(currentTrackMetaData)
                else:
-                  self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
+                  #self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
+                  self.albumArtImage.set_from_file('./images/AlbumArtEmpty.jpg')
                   pixbuf = self.albumArtImage.get_pixbuf().scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
                   self.albumArtImage.set_from_pixbuf(pixbuf)
             else:
                #self.musicLabel.set_markup("<span size=\"12000\"><b>[no music]</b></span>")
                self.musicLabel.set_markup("[no music]")
-               self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
+               self.albumArtImage.set_from_file('./images/AlbumArtEmpty.jpg')
                pixbuf = self.albumArtImage.get_pixbuf().scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
                self.albumArtImage.set_from_pixbuf(pixbuf)
       finally:
@@ -148,7 +149,7 @@ class MusicAlbumArtPage(PageBase):
       vbox = Gtk.VBox()
 
       self.albumArtImage = Gtk.Image()
-      self.albumArtImage.set_from_file('./images/NoAlbumArt.jpg')
+      self.albumArtImage.set_from_file('./images/AlbumArtEmpty.jpg')
       pixbuf = self.albumArtImage.get_pixbuf().scale_simple(250, 250, GdkPixbuf.InterpType.BILINEAR)
       self.albumArtImage.set_from_pixbuf(pixbuf)
       self.albumArtImage.show()

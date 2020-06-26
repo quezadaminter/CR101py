@@ -2,6 +2,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf
 from PageBase import PageBase
+import imageManager
 
 class MusicPage(PageBase):
 
@@ -40,7 +41,7 @@ class MusicPage(PageBase):
 
    def on_tree_selection_changed(self, selection):
        model, treeiter = selection.get_selected()
-       if treeiter is not None and Zones is not None:
+       if treeiter is not None:
           self.zoneListView.scroll_to_cell(model.get_path(treeiter), column=None, use_align=False, row_align=0.0, col_align=0.0)
 #          print("Selected: ", model.get_value(treeiter, 1))
 
@@ -49,7 +50,7 @@ class MusicPage(PageBase):
       return(self.titleLabel)
 
    def scrolledWindow(self):
-      self.arrowMore = Gtk.IconTheme.get_default().load_icon("image-loading", 16, 0)
+      self.arrowMore = imageManager.get_image('more').Scale(16, 16)
 
       self.zoneStore = Gtk.ListStore(str, GdkPixbuf.Pixbuf, str, object)
       self.zoneListView = Gtk.TreeView(self.zoneStore)
@@ -62,10 +63,11 @@ class MusicPage(PageBase):
       self.zoneListView.append_column(col)
 
       rend = Gtk.CellRendererPixbuf()
-      rend.set_property('cell-background', 'white')
+      #rend.set_property('cell-background', 'white')
       col = Gtk.TreeViewColumn("I", rend, pixbuf = 1)
       col.set_resizable(False)
       col.set_expand(False)
+      col.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
       self.zoneListView.append_column(col)
 
       # How do we get the list of services??
@@ -83,8 +85,7 @@ class MusicPage(PageBase):
          self.select.select_iter(self.selected_row_iter)
 
       sw = Gtk.ScrolledWindow()
-      sw.set_policy(1, 1)
-#      Gtk.POLICY_AUTOMATIC, Gtk.POLICY_AUTOMATIC)
+      sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
       sw.add(self.zoneListView)
       return(sw)
 

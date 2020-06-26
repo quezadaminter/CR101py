@@ -419,6 +419,7 @@ class PyApp(Gtk.Window):
       imageManager.add_image("./images/Stop.png", 'stop')
       imageManager.add_image("./images/Shrug.png", 'shrug')
       imageManager.add_image("./images/Transition.png", 'transition')
+      imageManager.add_image("./images/RightArrow.png", 'more')
 
       self.pageDict = {
          "ZonesPage" : ZonesPage(self),

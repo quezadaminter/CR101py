@@ -6,6 +6,7 @@ from PageBase import PageBase
 from Zone import Zone
 from socos.music_lib import MusicLibrary
 from mediaListItemsPage import MediaListItemsPage
+import imageManager
 
 class Dialog(Gtk.Dialog):
    def __init__(self, parent):
@@ -84,7 +85,7 @@ class SystemSettingsPage(PageBase):
       # if row item (2) is false hide B button label, else show it
        model, treeiter = selection.get_selected()
        if treeiter is not None: # and Zones is not None:
-          self.libListview.scroll_to_cell(model.get_path(treeiter), column=None, use_align=False, row_align=0.0, col_align=0.0)
+          self.libListView.scroll_to_cell(model.get_path(treeiter), column=None, use_align=False, row_align=0.0, col_align=0.0)
           print("Selected: ", model.get_value(treeiter, 0))
 
    def on_zone_transport_change_event(self, event):
@@ -98,7 +99,7 @@ class SystemSettingsPage(PageBase):
       return(self.titleLabel)
 
    def scrolledWindow(self):
-      self.arrowMore = Gtk.IconTheme.get_default().load_icon("image-loading", 16, 0)
+      self.arrowMore = imageManager.get_image('more').Scale(16, 16)
       self.libStore = Gtk.ListStore(str, bool, object)
       self.libListView = Gtk.TreeView(self.libStore)
       self.libListView.set_headers_visible(False)
@@ -128,8 +129,7 @@ class SystemSettingsPage(PageBase):
          self.select.select_iter(self.selected_row_iter)
 
       sw = Gtk.ScrolledWindow()
-      sw.set_policy(1, 1)
-#      Gtk.POLICY_AUTOMATIC, Gtk.POLICY_AUTOMATIC)
+      sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
       sw.add(self.libListView)
       return(sw)
 

@@ -6,6 +6,7 @@ from PageBase import PageBase
 from Zone import Zone
 from socos.music_lib import MusicLibrary
 from mediaListItemsPage import MediaListItemsPage
+import imageManager
 
 class TrackDialog(Gtk.Dialog):
    def on_tree_selection_changed(self, selection):
@@ -163,7 +164,7 @@ class MediaListTracksPage(MediaListItemsPage):
       return(self.titleLabel)
 
    def scrolledWindow(self):
-      self.arrowMore = Gtk.IconTheme.get_default().load_icon("image-loading", 16, 0)
+      self.arrowMore = imageManager.get_image('more').Scale(16, 16)
       self.libStore = Gtk.ListStore(GdkPixbuf.Pixbuf, str, bool, object)
       self.libListView = Gtk.TreeView(self.libStore)
       self.libListView.set_headers_visible(False)
@@ -189,8 +190,7 @@ class MediaListTracksPage(MediaListItemsPage):
          self.select.select_iter(self.selected_row_iter)
 
       sw = Gtk.ScrolledWindow()
-      sw.set_policy(1, 1)
-#      Gtk.POLICY_AUTOMATIC, Gtk.POLICY_AUTOMATIC)
+      sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
       sw.add(self.libListView)
       return(sw)
 
