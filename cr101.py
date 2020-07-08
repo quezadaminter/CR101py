@@ -121,8 +121,9 @@ class PyApp(Gtk.Window):
       def on_charger_event(self):
          pass
 
-      def on_system_event(self):
-         pass
+      def on_system_event(self, events):
+         if events & PI_EVENT_SHUTDOWN_BIT:
+            GLib.idle_add(self.add_as_idle, self.owner.on_destroy)
 
    def on_Zones_Button_Press(self, button, event):
        print("Zones press ", event)

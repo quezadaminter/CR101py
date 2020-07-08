@@ -87,7 +87,7 @@ class I2CListener(object):
       pass
 
    @abstractmethod
-   def on_system_event(self):
+   def on_system_event(self, event):
       pass
 
 
@@ -143,6 +143,11 @@ class CRi2c():
                    format(data[1] & PI_EVENT_SLEEP_BIT, data[1] & PI_EVENT_SHUTDOWN_BIT, data[1] & PI_EVENT_REBOOT_BIT,
                        "Disconnected" if ch == 0 else "EOC" if ch == 1 else "Charging" if ch == 2 else "UNK"))
                self.printByte(data[1], 1)
+
+               if reg & PI_EVENT_SHUTDOWN_BIT:
+                  if self.I2CListeners is not None and len(self.I2CListeners) > 0:
+                     for key in self.I2CListeners:
+                        self.I2CListeners[key].on_system_event(PI_REGISTERS[PI_EVENT_REGISTER])
 
            elif reg == PI_BATTERY_LEVEL_REGISTER:
                print("Got BATT LEVEL register: {}, Level: {}%". format(reg, data[1]))
