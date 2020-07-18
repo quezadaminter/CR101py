@@ -33,6 +33,54 @@ def moduleExists(module_name):
    else:
       return True
 
+volumeDialog = None
+
+class VolumeDialog(Gtk.Dialog):
+   def __init__(self, parent):
+      Gtk.Dialog.__init__(self, "Volume", parent, 0,
+            (Gtk.STOCK_NO, Gtk.ResponseType.CANCEL,
+             Gtk.STOCK_YES, Gtk.ResponseType.OK))
+
+      self.set_default_size(80, 100)
+      label = Gtk.Label("Zone")
+
+      box = self.get_content_area()
+      box.add(label)
+
+      hbox = Gtk.HBox()
+
+      self.volPos = 180
+
+      i = Gtk.Image()
+      i.set_from_pixbuf(imageManager.get_pixbuf("zone.connect"))
+      hbox.pack_start(i, False, False, 2)
+      self.volImage = Gtk.Image()
+      self.volImage.set_from_pixbuf(imageManager.get_pixbuf("vol.180"))
+      hbox.pack_start(self.volImage, False, False, 2)
+      i = Gtk.Image()
+      i.set_from_pixbuf(imageManager.get_pixbuf("speaker"))
+      hbox.pack_start(i, False, False, 2)
+      self.volumeProgressBar = Gtk.ProgressBar()
+      hbox.pack_start(self.volumeProgressBar, False, False, 2)
+
+      box.add(hbox)
+      self.show_all()
+
+   def Up(self, zone):
+      self.volPos += 18
+      if self.volPos >= 180:
+         self.volPos = 180
+
+      #self.volImage.set_from_pixbuf(imageManager.get_image("vol." + str(self.volPos)).Scale(32, 32))
+
+      self.volumeProgressBar.set_fraction(self.volPos / 180)
+
+   def Down(self, zone):
+      self.volPos -= 18
+      if self.volPos <= 0:
+         self.volPos = 0
+      self.volumeProgressBar.set_fraction(self.volPos / 180)
+
 class PyApp(Gtk.Window):
 
    class zoneListener(ZoneListener):
@@ -79,7 +127,10 @@ class PyApp(Gtk.Window):
          return False
 
       def on_button_pressed_event(self, btn):
-         pass
+          if btn == I2C.SWITCH_VOL_UP:
+             GLib.idle_add(self.add_as_idle, self.owner.on_zoneVolUpButton_Pressed)
+          elif btn == I2C.SWITCH_VOL_DN:
+             GLib.idle_add(self.add_as_idle, self.owner.on_zoneVolDownButton_Pressed)
 
       def on_button_released_event(self, btn):
           print("BUTTON: ", btn)
@@ -87,9 +138,9 @@ class PyApp(Gtk.Window):
           if btn == I2C.SWITCH_MUTE:
              GLib.idle_add(self.add_as_idle, self.owner.on_zoneMuteButton_Clicked)
           elif btn == I2C.SWITCH_VOL_UP:
-             GLib.idle_add(self.add_as_idle, self.owner.on_zoneVolUpButton_Clicked)
+             GLib.idle_add(self.add_as_idle, self.owner.on_zoneVolUpButton_Released)
           elif btn == I2C.SWITCH_VOL_DN:
-             GLib.idle_add(self.add_as_idle, self.owner.on_zoneVolDownButton_Clicked)
+             GLib.idle_add(self.add_as_idle, self.owner.on_zoneVolDownButton_Released)
           elif btn == I2C.SWITCH_A:
              GLib.idle_add(self.add_as_idle, self.owner.on_Button_A_Clicked)
           elif btn == I2C.SWITCH_B:
@@ -173,11 +224,27 @@ class PyApp(Gtk.Window):
       self.i2c.sendEvent(I2C.SWITCH_VOL_UP, False)
       return True
 
-   def on_zoneVolUpButton_Clicked(self, button):
+   def on_zoneVolUpButton_Pressed(self, button):
       print("Up")
       zp = self.pageDict["ZonesPage"]
       if zp is not None and zp.selectedZone is not None:
          zp.selectedZone.volume('+')
+
+      global volumeDialog
+      if volumeDialog is None:
+         volumeDialog = VolumeDialog(self.get_toplevel())
+         volumeDialog.set_decorated(False)
+         volumeDialog.run()
+      return True
+
+   def on_zoneVolUpButton_Released(self, button):
+      print("Up")
+      zp = self.pageDict["ZonesPage"]
+      if zp is not None and zp.selectedZone is not None:
+         pass
+
+      if volumeDialog is not None:
+         volumeDialog.Up(zp)
       return True
 
    def on_zoneVolDownButton_Press(self, button, event):
@@ -188,12 +255,29 @@ class PyApp(Gtk.Window):
       self.i2c.sendEvent(I2C.SWITCH_VOL_DN, False)
       return True
 
-   def on_zoneVolDownButton_Clicked(self, button):
+   def on_zoneVolDownButton_Pressed(self, button):
       print("Down")
       zp = self.pageDict["ZonesPage"]
       if zp is not None and zp.selectedZone is not None:
          zp.selectedZone.volume('-')
+      
+      global volumeDialog
+      if volumeDialog is None:
+         volumeDialog = VolumeDialog(self.get_toplevel())
+         volumeDialog.set_decorated(False)
+         volumeDialog.run()
       return True
+   
+   def on_zoneVolDownButton_Released(self, button):
+      print("Up")
+      zp = self.pageDict["ZonesPage"]
+      if zp is not None and zp.selectedZone is not None:
+         pass
+
+      if volumeDialog is not None:
+         volumeDialog.Down(zp)
+      return True
+
 
    def get_selected_zone(self):
       zp = self.pageDict["ZonesPage"]
@@ -287,7 +371,12 @@ class PyApp(Gtk.Window):
       return True
 
    def on_Return_Button_Clicked(self, button):
-      self.pageInView.on_Return_Button_Clicked()
+      global volumeDialog
+      if volumeDialog is not None:
+         volumeDialog.destroy()
+         volumeDialog = None
+      else:
+         self.pageInView.on_Return_Button_Clicked()
       return True
 
    def on_Scroll_Up(self, button):
@@ -421,6 +510,10 @@ class PyApp(Gtk.Window):
       imageManager.add_image("./images/Shrug.png", 'shrug')
       imageManager.add_image("./images/Transition.png", 'transition')
       imageManager.add_image("./images/RightArrow.png", 'more')
+      imageManager.add_image("./images/Connect.png", 'zone.connect')
+      imageManager.add_image("./images/Volume_180.png", 'vol.180')
+      imageManager.add_image("./images/Volume_00.svg", 'vol.0')
+      imageManager.add_image("./images/Speaker.png", 'speaker')
 
       self.pageDict = {
          "ZonesPage" : ZonesPage(self),
