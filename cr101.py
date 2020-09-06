@@ -1,6 +1,8 @@
 #!/bin/python3
+import os
 import sys
 import soco
+from Xlib import X, display
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject, GLib, Gdk
@@ -173,7 +175,9 @@ class PyApp(Gtk.Window):
          pass
 
       def on_system_event(self, events):
-         if events & PI_EVENT_SHUTDOWN_BIT:
+         if events & PI_EVENT_SLEEP_BIT:
+            pass
+         elif events & PI_EVENT_SHUTDOWN_BIT:
             GLib.idle_add(self.add_as_idle, self.owner.on_destroy)
 
    def on_Zones_Button_Press(self, button, event):
@@ -706,6 +710,15 @@ class PyApp(Gtk.Window):
          cmdVBox.hide()
          buttonBoxABC.hide()
          vBoxVol.hide()
+         d = display.Display()
+         s = d.screen()
+         root = s.root
+         root.warp_pointer(481, 321)
+         d.sync()
+         ss = d.get_screen_saver()
+         print("Screen saver timeout: ", ss.timeout)
+         ss.timeout = 60
+         d.set_screen_saver(ss.timeout, ss.interval, ss.prefer_blanking, ss.allow_exposures)
 
       if hideDecorations == True:
          self.get_window().set_decorations(Gdk.WMDecoration.BORDER)
@@ -719,6 +732,12 @@ class PyApp(Gtk.Window):
 
 
 try:
+   print("CWD: ", os.getcwd())
+   # Need a better way to inform
+   # the CR101 code on the path
+   # of its resources, such as
+   # images...
+   os.chdir('/home/pi/CR101py/')
    print("Argv: ", len(sys.argv))
 
    hideUI = False

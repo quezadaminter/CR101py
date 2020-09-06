@@ -1,7 +1,10 @@
+import os
 import time
 import pigpio
 import threading
 from enum import Enum
+from contextlib import redirect_stdout
+from Xlib import X, display
 
 # GPIO 19 (SCL)
 # GPIO 18 (SDA)
@@ -60,6 +63,9 @@ PI_REGISTERS = [0] * PI_END_REGISTER
 
 from abc import ABCMeta, abstractmethod
 
+# I/O pipes
+I2C_OUT = '/tmp/cr101.i2c.out'
+
 class I2CListener(object):
    __metaclass__=ABCMeta
 
@@ -93,6 +99,13 @@ class I2CListener(object):
 
 class CRi2c():
 
+   def Log(self, s, both = False):
+      with redirect_stdout(self.out):
+         print(s)
+         self.out.flush()
+      if both == True:
+         print(s)
+
    def updateListeners(self, event):
        pass
 #      if len(I2CListeners) gt 0:
@@ -109,7 +122,7 @@ class CRi2c():
           i = i - 1
           if i % 4 == 0:
               s += " "
-      print(s)
+      self.Log(s)
 
    def sendEvent(self, btn, pressed):
       data = []
@@ -120,7 +133,7 @@ class CRi2c():
       else:
          data.append((1 << (btn - 8)) if pressed == True else 0)
          data.append(0)
-      print(data)
+      self.Log(data)
       self.processMessage(data, 3)
 
 
@@ -133,24 +146,28 @@ class CRi2c():
            n = 2
 
            if reg == PI_EVENT_REGISTER:
-               print("Got EVENT register: {}, data: {}".format(reg, data[1]))
-               print("Byte value: {}". format(data[1]))
+               self.Log("Got EVENT register: {}, data: {}".format(reg, data[1]))
+               self.Log("Byte value: {}". format(data[1]))
                ch = 0 if (data[1] & PI_EVENT_CHARGING_BIT_A == False and data[1] & PI_EVENT_CHARGING_BIT_B == False) else \
                     1 if data[1] & PI_EVENT_CHARGING_BIT_A else \
                     2 if data[1] & PI_EVENT_CHARGING_BIT_B else \
                     3
-               print("Sleep: {}, Shutdown: {}, Reboot: {}, Charger: {}".
+               self.Log("Sleep: {}, Shutdown: {}, Reboot: {}, Charger: {}".
                    format(data[1] & PI_EVENT_SLEEP_BIT, data[1] & PI_EVENT_SHUTDOWN_BIT, data[1] & PI_EVENT_REBOOT_BIT,
                        "Disconnected" if ch == 0 else "EOC" if ch == 1 else "Charging" if ch == 2 else "UNK"))
                self.printByte(data[1], 1)
 
-               if reg & PI_EVENT_SHUTDOWN_BIT:
-                  if self.I2CListeners is not None and len(self.I2CListeners) > 0:
-                     for key in self.I2CListeners:
-                        self.I2CListeners[key].on_system_event(PI_REGISTERS[PI_EVENT_REGISTER])
+               if self.I2CListeners is not None and len(self.I2CListeners) > 0:
+                  if reg & PI_EVENT_SHUTDOWN_BIT:
+                      pass
+                  elif reg & PI_EVENT_SLEEP_BIT:
+                      self.pi.write(22, 0);
+
+                  for key in self.I2CListeners:
+                     self.I2CListeners[key].on_system_event(PI_REGISTERS[PI_EVENT_REGISTER])
 
            elif reg == PI_BATTERY_LEVEL_REGISTER:
-               print("Got BATT LEVEL register: {}, Level: {}%". format(reg, data[1]))
+               self.Log("Got BATT LEVEL register: {}, Level: {}%". format(reg, data[1]))
                self.printByte(data[1], 1)
                PI_REGISTERS[PI_BATTERY_LEVEL_REGISTER] = data[1]
                if self.I2CListeners is not None and len(self.I2CListeners) > 0:
@@ -158,7 +175,17 @@ class CRi2c():
                      self.I2CListeners[key].on_battery_level_event(PI_REGISTERS[PI_BATTERY_LEVEL_REGISTER])
 
            elif reg == PI_INPUT_REGISTER_H:
-               print("Got SWITCH register: {}, data: {} {}".format(reg, data[1], data[2]))
+               # If it is a sleep, wake up the display on button/scroll events.
+               d = display.Display()
+               s = d.screen()
+               root = s.root
+               root.warp_pointer(0, 0)
+               d.sync()
+               root.warp_pointer(481, 321)
+               d.sync()
+               self.pi.write(22, 1)
+
+               self.Log("Got SWITCH register: {}, data: {} {}".format(reg, data[1], data[2]))
                n = 3
                #print("sent={} FR={} received={} [{}]".format(s>>16, s&0xfff, b, data))
 
@@ -167,16 +194,16 @@ class CRi2c():
                if len(data) > 2:
                   s = ""
                   w = (data[1] << 8) | data[2]
-                  print("Word value: {}".format(w))
+                  self.Log("Word value: {}".format(w))
                   self.printByte(w, 2)
-                  print("Current reg")
+                  self.Log("Current reg")
                   self.printByte(PI_REGISTERS[PI_INPUT_REGISTER_H], 2)
 
                   oldW = (PI_REGISTERS[PI_INPUT_REGISTER_H] << 8) | PI_REGISTERS[PI_INPUT_REGISTER_L]
                   if self.I2CListeners is not None and len(self.I2CListeners) > 0:
                      change = w ^ oldW
                      if change != 0:
-                        print("CHANGE: ")
+                        self.Log("CHANGE: ")
                         self.printByte(change, 2)
                         i = 0
                         while i < SWITCH_LIST_END:
@@ -198,11 +225,11 @@ class CRi2c():
 
 
            elif reg == PI_DEBUG_BYTE_REGISTER:
-               print("Got BYTE DEBUG register: {}, data: {}". format(reg, data[1]))
+               self.Log("Got BYTE DEBUG register: {}, data: {}". format(reg, data[1]))
                self.printByte(data[1], 1)
 
            elif reg == PI_DEBUG_WORD_REGISTER_H:
-               print("Got WORD DEBUG register: {}, data: {} {}".format(reg, data[1], data[2]))
+               self.Log("Got WORD DEBUG register: {}, data: {} {}".format(reg, data[1], data[2]))
                n = 3
                i = 0
                #print("sent={} FR={} received={} [{}]".format(s>>16, s&0xfff, b, data))
@@ -212,12 +239,12 @@ class CRi2c():
                if len(data) > 2:
                   s = ""
                   w = (data[1] << 8) | data[2]
-                  print("Word value: {}".format(w))
+                  self.Log("Word value: {}".format(w))
                   self.printByte(w, 2)
 
 
            elif reg == PI_FREE_TEXT_REGISTER:
-               print("Got TEXT register: {}, rem: {}, len: {}, LEN: {}". format(reg, rem, data[1], len(data[2:])))
+               self.Log("Got TEXT register: {}, rem: {}, len: {}, LEN: {}". format(reg, rem, data[1], len(data[2:])))
                i = 0
                l = data[1]
                data = data[2:]
@@ -232,9 +259,9 @@ class CRi2c():
                    n = l + 2
                    print("Message: {}".format(s))
                except IndexError as e:
-                   print(i)
-                   print(l)
-                   print(e)
+                   self.Log(i)
+                   self.Log(l)
+                   self.Log(e)
 
            return n
 
@@ -242,7 +269,7 @@ class CRi2c():
 
        s, b, d = self.pi.bsc_i2c(PI_I2C_ADDRESS)
        if b:
-           print("-----------------Got {} bytes! Status {} d[0] {}--------------".format(b, s, d[0]))
+           self.Log("-----------------Got {} bytes! Status {} d[0] {}--------------".format(b, s, d[0]))
            j = 0
            rem = b
            while j < b:
@@ -260,32 +287,52 @@ class CRi2c():
 
    def __init__(self):
       try:
-        print("Loading I2C interface.")
-        self.mutex = threading.Lock()
-        
-        self.I2CListeners = {}
+         try:
+            os.mkfifo(I2C_OUT)
+         except Exception as e:
+            print("FIFO: " + repr(e))
+            os.unlink(I2C_OUT)
+            os.mkfifo(I2C_OUT)
+         try:
+            fd = os.open(I2C_OUT, os.O_RDWR) #non-blocking
+            self.out = os.fdopen(fd, 'w') #also non-blocking
+         except Exception as e:
+            print(e)
 
-        self.pi = pigpio.pi()
+         self.Log("Loading I2C interface.", True)
+         self.mutex = threading.Lock()
+         
+         self.I2CListeners = {}
 
-        if not self.pi.connected:
-           print("Running without PIGPIO!")
-        else:
-           # handle slave activity
-           self.e = self.pi.event_callback(pigpio.EVENT_BSC, self.i2c)
+         self.pi = pigpio.pi()
 
-           self.pi.bsc_i2c(PI_I2C_ADDRESS) # configures the BSC as I2C slave
+         if not self.pi.connected:
+            self.Log("Running without PIGPIO!", True)
+         else:
+            # Enable the LCD backlight.
+            self.pi.set_mode(22, pigpio.OUTPUT);
+            self.pi.write(22, 1);
+            # handle slave activity
+            self.e = self.pi.event_callback(pigpio.EVENT_BSC, self.i2c)
+
+            self.pi.bsc_i2c(PI_I2C_ADDRESS) # configures the BSC as I2C slave
 
       except:
-          self.Close()
+         self.Close()
 
-      print("I2C running!")
+      self.Log("I2C running!", True)
 
    def Close(self):
-     print("I2C Done!")
+     self.Log("I2C Done!", True)
 
-     if self.pi.connected:
+     if self.pi is not None and self.pi.connected:
         self.e.cancel()
 
         self.pi.bsc_i2c(0) # disable peripherial
 
         self.pi.stop()
+
+        self.out.close()
+
+        os.unlink(I2C_OUT)
+
