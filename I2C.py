@@ -102,7 +102,7 @@ class CRi2c():
 
    def Log(self, s, both = False):
       if self.pipe is not None:
-            self.pipe.Send(s)
+         self.pipe.Send(s + '\n')
          if both == True:
             print(s)
       else:
@@ -135,7 +135,7 @@ class CRi2c():
       else:
          data.append((1 << (btn - 8)) if pressed == True else 0)
          data.append(0)
-      self.Log(data)
+      #self.Log(data)
       self.processMessage(data, 3)
 
 
@@ -270,7 +270,7 @@ class CRi2c():
                    n = l + 2
                    print("Message: {}".format(s))
                except IndexError as e:
-                   self.Log(i)
+                   self.Log(str(i))
                    self.Log(l)
                    self.Log(e)
 
