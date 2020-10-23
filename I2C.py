@@ -2,6 +2,7 @@ import os
 import time
 import pigpio
 import threading
+from PipeW import PipeW
 from enum import Enum
 from contextlib import redirect_stdout
 from Xlib import X, display
@@ -100,10 +101,11 @@ class I2CListener(object):
 class CRi2c():
 
    def Log(self, s, both = False):
-      with redirect_stdout(self.out):
-         print(s)
-         self.out.flush()
-      if both == True:
+      if self.pipe is not None:
+            self.pipe.Send(s)
+         if both == True:
+            print(s)
+      else:
          print(s)
 
    def updateListeners(self, event):
@@ -162,8 +164,8 @@ class CRi2c():
                PI_REGISTERS[PI_EVENT_REGISTER] = data[1]
                if change != 0:
                   if self.I2CListeners is not None and len(self.I2CListeners) > 0:
-                     if change & PI_EVENT_SHUTDOWN_BIT:
-                         pass
+                     if reg & PI_EVENT_SHUTDOWN_BIT:
+                        self.Log("SHUTDOWN RECEIVED!")
                      elif change & PI_EVENT_SLEEP_BIT:
                          if data[1] & PI_EVENT_SLEEP_BIT:
                             self.pi.write(22, 0)
@@ -282,7 +284,7 @@ class CRi2c():
            j = 0
            rem = b
            while j < b:
-               reg = d[j]
+               #reg = d[j]
                n = self.processMessage(d[j:], rem)
                j = j + n
                rem = rem - n
@@ -297,16 +299,10 @@ class CRi2c():
    def __init__(self):
       try:
          try:
-            os.mkfifo(I2C_OUT)
-         except Exception as e:
-            print("FIFO: " + repr(e))
-            os.unlink(I2C_OUT)
-            os.mkfifo(I2C_OUT)
-         try:
-            fd = os.open(I2C_OUT, os.O_RDWR) #non-blocking
-            self.out = os.fdopen(fd, 'w') #also non-blocking
-         except Exception as e:
-            print(e)
+            self.pipe = PipeW(I2C_OUT, 100)
+            self.pipe.Start()
+         except:
+            self.pipe = None
 
          self.Log("Loading I2C interface.", True)
          self.mutex = threading.Lock()
@@ -319,8 +315,8 @@ class CRi2c():
             self.Log("Running without PIGPIO!", True)
          else:
             # Enable the LCD backlight.
-            self.pi.set_mode(22, pigpio.OUTPUT);
-            self.pi.write(22, 1);
+            self.pi.set_mode(22, pigpio.OUTPUT)
+            self.pi.write(22, 1)
             # handle slave activity
             self.e = self.pi.event_callback(pigpio.EVENT_BSC, self.i2c)
 
@@ -335,13 +331,12 @@ class CRi2c():
      self.Log("I2C Done!", True)
 
      if self.pi is not None and self.pi.connected:
-        self.e.cancel()
+         self.e.cancel()
 
-        self.pi.bsc_i2c(0) # disable peripherial
+         self.pi.bsc_i2c(0) # disable peripherial
 
-        self.pi.stop()
+         self.pi.stop()
 
-        self.out.close()
-
-        os.unlink(I2C_OUT)
+         if self.pipe is not None:
+            self.pipe.Stop()
 
