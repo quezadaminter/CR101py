@@ -175,9 +175,9 @@ class PyApp(Gtk.Window):
          pass
 
       def on_system_event(self, events):
-         if events & PI_EVENT_SLEEP_BIT:
+         if events & I2C.PI_EVENT_SLEEP_BIT:
             pass
-         elif events & PI_EVENT_SHUTDOWN_BIT:
+         elif events & I2C.PI_EVENT_SHUTDOWN_BIT:
             GLib.idle_add(self.add_as_idle, self.owner.on_destroy)
 
    def on_Zones_Button_Press(self, button, event):
@@ -716,9 +716,12 @@ class PyApp(Gtk.Window):
          root.warp_pointer(481, 321)
          d.sync()
          ss = d.get_screen_saver()
-         print("Screen saver timeout: ", ss.timeout)
+         print("Screen saver timeout was: ", ss.timeout)
          ss.timeout = 60
          d.set_screen_saver(ss.timeout, ss.interval, ss.prefer_blanking, ss.allow_exposures)
+         d.sync()
+         ss = d.get_screen_saver()
+         print("Screen saver timeout now is: ", ss.timeout)
 
       if hideDecorations == True:
          self.get_window().set_decorations(Gdk.WMDecoration.BORDER)

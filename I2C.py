@@ -157,14 +157,23 @@ class CRi2c():
                        "Disconnected" if ch == 0 else "EOC" if ch == 1 else "Charging" if ch == 2 else "UNK"))
                self.printByte(data[1], 1)
 
-               if self.I2CListeners is not None and len(self.I2CListeners) > 0:
-                  if reg & PI_EVENT_SHUTDOWN_BIT:
-                      pass
-                  elif reg & PI_EVENT_SLEEP_BIT:
-                      self.pi.write(22, 0);
+               oldR = PI_REGISTERS[PI_EVENT_REGISTER]
+               change = data[1] ^ oldR
+               PI_REGISTERS[PI_EVENT_REGISTER] = data[1]
+               if change != 0:
+                  if self.I2CListeners is not None and len(self.I2CListeners) > 0:
+                     if change & PI_EVENT_SHUTDOWN_BIT:
+                         pass
+                     elif change & PI_EVENT_SLEEP_BIT:
+                         if data[1] & PI_EVENT_SLEEP_BIT:
+                            self.pi.write(22, 0)
+                            self.Log("Go to sleep LCD.")
+                         else:
+                            self.pi.write(22, 1)
+                            self.Log("Wake up LCD.")
 
-                  for key in self.I2CListeners:
-                     self.I2CListeners[key].on_system_event(PI_REGISTERS[PI_EVENT_REGISTER])
+                     for key in self.I2CListeners:
+                        self.I2CListeners[key].on_system_event(PI_REGISTERS[PI_EVENT_REGISTER])
 
            elif reg == PI_BATTERY_LEVEL_REGISTER:
                self.Log("Got BATT LEVEL register: {}, Level: {}%". format(reg, data[1]))
@@ -266,7 +275,7 @@ class CRi2c():
            return n
 
    def i2c(self, id, tick):
-
+       self.Log("Receuved I2C data")
        s, b, d = self.pi.bsc_i2c(PI_I2C_ADDRESS)
        if b:
            self.Log("-----------------Got {} bytes! Status {} d[0] {}--------------".format(b, s, d[0]))
