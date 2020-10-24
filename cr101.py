@@ -177,6 +177,8 @@ class PyApp(Gtk.Window):
       def on_system_event(self, events):
          if events & I2C.PI_EVENT_SLEEP_BIT:
             pass
+         elif events & I2C.PI_EVENT_REBOOT_BIT:
+            os.system("sudo reboot now")
          elif events & I2C.PI_EVENT_SHUTDOWN_BIT:
             GLib.idle_add(self.add_as_idle, self.owner.on_destroy)
 
