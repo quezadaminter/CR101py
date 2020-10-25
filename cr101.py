@@ -165,7 +165,10 @@ class PyApp(Gtk.Window):
              GLib.idle_add(self.add_as_idle, self.owner.on_Next_Button_Clicked)
 
       def on_scroll_event(self, steps):
-         pass
+         if steps < 0:
+            GLib.idle_add(self.add_as_idle, self.owner.on_Scroll_Up)
+         elif steps > 0:
+            GLib.idle_add(self.add_as_idle, self.owner.on_Scroll_Down)
 
       def on_battery_level_event(self, level):
          #GLib.idle_add(self.add_as_idle, self.owner.on_Battery_Level_Event, level)
@@ -179,8 +182,13 @@ class PyApp(Gtk.Window):
             pass
          elif events & I2C.PI_EVENT_REBOOT_BIT:
             os.system("sudo reboot now")
+         elif events & I2C.PI_EVENT_RESTART_APP_BIT:
+            GLib.idle_add(self.add_as_idle, self.owner.on_destroy)
+            python = sys.executable
+            os.execl(python, python, *sys.argv)
          elif events & I2C.PI_EVENT_SHUTDOWN_BIT:
             GLib.idle_add(self.add_as_idle, self.owner.on_destroy)
+            os.system("sudo shutdown now")
 
    def on_Zones_Button_Press(self, button, event):
        print("Zones press ", event)

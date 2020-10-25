@@ -49,6 +49,7 @@ PI_EVENT_SHUTDOWN_BIT = (1 << 1)
 PI_EVENT_REBOOT_BIT = (1 << 2)
 PI_EVENT_CHARGING_BIT_A = (1 << 3)
 PI_EVENT_CHARGING_BIT_B = (1 << 4)
+PI_EVENT_RESTART_APP_BIT = (1 << 5)
 
 PI_BATTERY_LEVEL_REGISTER = 0x02
 PI_INPUT_REGISTER_H = 0x03
@@ -165,7 +166,11 @@ class CRi2c():
                if change != 0:
                   if self.I2CListeners is not None and len(self.I2CListeners) > 0:
                      if reg & PI_EVENT_SHUTDOWN_BIT:
-                        self.Log("SHUTDOWN RECEIVED!")
+                        self.Log("SOFT SHUTDOWN RECEIVED!")
+                     elif reg & PI_EVENT_RESTART_APP_BIT:
+                        self.Log("RESTART APP RECEIVED!")
+                     elif reg & PI_EVENT_REBOOT_BIT:
+                        self.Log("REBOOT OS RECEIVED!")
                      elif change & PI_EVENT_SLEEP_BIT:
                          if data[1] & PI_EVENT_SLEEP_BIT:
                             self.pi.write(22, 0)
@@ -221,8 +226,9 @@ class CRi2c():
                             if change & (1 << i):
                                for key in self.I2CListeners:
                                    if i == SWITCH_SCROLL_EVENT:
-                                       self.I2CListeners[key].on_scroll_event(w >> SWITCH_SCROLL_EVENT) # NEEDS DIRECTION!!
-                                       pass
+                                      pass
+                                       #self.Log("SCROLL!! {}".format(w))
+                                       #self.I2CListeners[key].on_scroll_event(w >> SWITCH_SCROLL_EVENT) # NEEDS DIRECTION!!
 
                                    else:
                                        if w & (1 << i):
@@ -234,6 +240,14 @@ class CRi2c():
                         PI_REGISTERS[PI_INPUT_REGISTER_H] = data[1]
                         PI_REGISTERS[PI_INPUT_REGISTER_L] = data[2]
 
+
+           elif reg == PI_SCROLL_CLICKS_REGISTER:
+              clicks = data[1] - 128 # convert unsigned to signed count.
+              self.Log("Got SRCOLL BYTE register: {}, data: {}, clicks: {}". format(reg, data[1], clicks))
+              self.printByte(data[1], 1)
+              if self.I2CListeners is not None and len(self.I2CListeners) > 0:
+                 for key in self.I2CListeners:
+                    self.I2CListeners[key].on_scroll_event(clicks)
 
            elif reg == PI_DEBUG_BYTE_REGISTER:
                self.Log("Got BYTE DEBUG register: {}, data: {}". format(reg, data[1]))
