@@ -8,6 +8,35 @@ from gi.repository import Gtk, GObject, GLib, Gdk
 def mainStyle():
    css = b"""
 
+label
+{
+    color: #002EB3;
+    background-color: #A8A8A8;
+}
+
+box, grid {
+    color: #002EB3;
+    background-color: #A8A8A8;
+}
+
+button
+{
+background-image: none;
+    color: #AA00AA;
+    background-color: #A8A8A8;
+}
+
+treeview 
+{
+background-color: #A0A0A0;
+}
+treeview:selected
+{
+background-color: rgba(255,255,0,1.0);
+color: rgba(0,0,255,1.0);
+}
+
+/*
 * {
     background-image: none;
     background-color: #2998EA;
@@ -39,6 +68,12 @@ GtkBox, GtkGrid {
 GtkTreeView row:selected {
     background-color: #49B8FA;
 }
+*/
+/*
+scrolledwindow treeview {
+   background: #777777;
+}
+*/
 
 /*
 GtkTreeView row{
@@ -75,9 +110,7 @@ label:hover {
     background-color: #993401;
 }
 */
-scrolledwindow treeview {
-   background: #2C2C2C;
-}
+
 /*
 GtkTreeView row:nth-child(odd) {
     background-color: #FF00FF;

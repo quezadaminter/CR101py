@@ -57,12 +57,14 @@ class MusicPage(PageBase):
       self.zoneListView.set_headers_visible(False)
 
       rend = Gtk.CellRendererText()
+      #rend.set_property('cell-background', '#777777')
       col = Gtk.TreeViewColumn("Service", rend, text=0)
       col.set_resizable(False)
       col.set_expand(False)
       self.zoneListView.append_column(col)
 
       rend = Gtk.CellRendererPixbuf()
+      #rend.set_property('cell-background', '#777777')
       #rend.set_property('cell-background', 'white')
       col = Gtk.TreeViewColumn("I", rend, pixbuf = 1)
       col.set_resizable(False)
