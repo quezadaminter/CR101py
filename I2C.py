@@ -199,6 +199,8 @@ class CRi2c():
                d.sync()
                root.warp_pointer(481, 321)
                d.sync()
+               ss = d.get_screen_saver()
+               print("SS: ", ss)
                self.pi.write(22, 1)
 
                self.Log("Got SWITCH register: {}, data: {} {}".format(reg, data[1], data[2]))
@@ -291,7 +293,7 @@ class CRi2c():
            return n
 
    def i2c(self, id, tick):
-       self.Log("Receuved I2C data")
+       self.Log("Received I2C data")
        s, b, d = self.pi.bsc_i2c(PI_I2C_ADDRESS)
        if b:
            self.Log("-----------------Got {} bytes! Status {} d[0] {}--------------".format(b, s, d[0]))

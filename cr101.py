@@ -466,6 +466,10 @@ class PyApp(Gtk.Window):
             zone.update()
          if self.get_selected_zone() is not None:
             self.get_selected_zone().monitor()
+
+         # Add timer here to enable and disable screen blanking manually.
+
+
          time.sleep(1.0)
 
    def hide_queue_page(self):

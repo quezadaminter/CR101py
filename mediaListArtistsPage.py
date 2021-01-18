@@ -72,6 +72,8 @@ class MediaListArtistsPage(MediaListItemsPage):
       sw = Gtk.ScrolledWindow()
       sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
       sw.add(self.libListView)
+
+      self.scrollwindow = sw
       return(sw)
   
    def prependRow(self):
